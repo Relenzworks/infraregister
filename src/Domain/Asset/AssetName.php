@@ -18,6 +18,10 @@ final class AssetName
             throw new InvalidAssetName('Asset name cannot be blank.');
         }
 
+        if (mb_check_encoding($trimmed, 'UTF-8') === false) {
+            throw new InvalidAssetName('Asset name must be valid UTF-8.');
+        }
+
         if (mb_strlen($trimmed) > self::MAX_LENGTH) {
             throw new InvalidAssetName('Asset name cannot exceed 120 characters.');
         }
