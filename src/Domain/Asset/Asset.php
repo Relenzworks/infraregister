@@ -16,4 +16,9 @@ final class Asset
     {
         return new self($id, $name, AssetStatus::InService);
     }
+
+    public static function reconstitute(AssetId $id, AssetName $name, AssetStatus $status): self
+    {
+        return new self($id, $name, $status);
+    }
 }

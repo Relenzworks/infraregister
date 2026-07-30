@@ -19,4 +19,6 @@ This repository contains the framework-independent DDD/hexagonal core. Cacti int
 composer install
 composer quality
 composer test:coverage
+php bin/infraregister asset:register "Core Router 01"
+tools/test-docker-platforms.sh ubuntu-24.04 rocky-9
 ```
