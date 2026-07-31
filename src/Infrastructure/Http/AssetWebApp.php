@@ -8,10 +8,13 @@ use InvalidArgumentException;
 use RelenzWorks\InfraRegister\Application\Asset\RegisterAsset;
 use RelenzWorks\InfraRegister\Application\Asset\RegisterAssetHandler;
 use RelenzWorks\InfraRegister\Application\Security\AccessPolicy;
+use RelenzWorks\InfraRegister\Domain\Asset\Asset;
+use RelenzWorks\InfraRegister\Domain\Asset\AssetStatus;
 use RelenzWorks\InfraRegister\Domain\Security\Permission;
 use RelenzWorks\InfraRegister\Infrastructure\Persistence\AssetStoreUnavailable;
 use RelenzWorks\InfraRegister\Infrastructure\Persistence\JsonAssetRepository;
 use RelenzWorks\InfraRegister\Infrastructure\Security\LocalUserDirectory;
+use RelenzWorks\InfraRegister\Port\AssetRepository;
 use RelenzWorks\InfraRegister\Port\UserDirectory;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -431,21 +434,25 @@ final class AssetWebApp
 
     public function __construct(
         private readonly RegisterAssetHandler $registerAsset,
+        private readonly AssetRepository $assetRepository,
         private readonly ?UserDirectory $userDirectory,
         private readonly AccessPolicy $accessPolicy = new AccessPolicy(),
     ) {}
 
     public static function fromStore(string $path, ?string $basePath, ?string $writeAuth = null): self
     {
+        $repository = new JsonAssetRepository($path, $basePath);
+
         return new self(
-            new RegisterAssetHandler(new JsonAssetRepository($path, $basePath)),
+            new RegisterAssetHandler($repository),
+            $repository,
             LocalUserDirectory::fromLegacyWriteAuth($writeAuth),
         );
     }
 
     public function withUserDirectory(?UserDirectory $userDirectory): self
     {
-        return new self($this->registerAsset, $userDirectory, $this->accessPolicy);
+        return new self($this->registerAsset, $this->assetRepository, $userDirectory, $this->accessPolicy);
     }
 
     public function handle(Request $request): Response
@@ -1107,7 +1114,7 @@ final class AssetWebApp
     private function renderScreenContent(string $path, array $screen): string
     {
         $cards = $this->renderCards($screen['items']);
-        $workspace = self::WORKSPACES[$path];
+        $workspace = $this->workspaceFor($path);
         $metrics = $this->renderMetrics($workspace['metrics']);
         $actions = $this->renderActions($workspace['actions']);
         $table = $this->renderTable($workspace['columns'], $workspace['rows']);
@@ -1143,6 +1150,108 @@ final class AssetWebApp
               </aside>
             </div>
             HTML;
+    }
+
+    /**
+     * @return array{
+     *     actions: list<string>,
+     *     metrics: list<array{label: string, value: string, detail: string}>,
+     *     tableTitle: string,
+     *     columns: list<string>,
+     *     rows: list<list<string>>,
+     *     sideTitle: string,
+     *     sideItems: list<array{label: string, value: string}>
+     * }
+     */
+    private function workspaceFor(string $path): array
+    {
+        $workspace = self::WORKSPACES[$path];
+        $assets = $this->assetRepository->all();
+
+        if ($assets === []) {
+            return $workspace;
+        }
+
+        $registeredCount = count($assets);
+        $inServiceCount = $this->countAssetsByStatus($assets, AssetStatus::InService);
+        $inStorageCount = $this->countAssetsByStatus($assets, AssetStatus::InStorage);
+        $retiredCount = $this->countAssetsByStatus($assets, AssetStatus::Retired);
+        $recentAssets = array_slice(array_reverse($assets), 0, 4);
+
+        if ($path === '/') {
+            $workspace['metrics'] = [
+                ['label' => 'Tracked assets', 'value' => (string) $registeredCount, 'detail' => sprintf('%d registered locally', $registeredCount)],
+                ['label' => 'In service', 'value' => (string) $inServiceCount, 'detail' => 'Active inventory records'],
+                ['label' => 'In storage', 'value' => (string) $inStorageCount, 'detail' => 'Available or staged inventory'],
+                ['label' => 'Retired', 'value' => (string) $retiredCount, 'detail' => 'Removed from active service'],
+            ];
+            $workspace['tableTitle'] = 'Recent Registrations';
+            $workspace['columns'] = ['Asset', 'Status', 'Identifier', 'Due'];
+            $workspace['rows'] = array_map(
+                fn(Asset $asset): array => [
+                    $asset->name->value,
+                    $this->assetStatusLabel($asset->status),
+                    substr($asset->id->value, 0, 8),
+                    'Review metadata',
+                ],
+                $recentAssets,
+            );
+            $workspace['sideTitle'] = 'Recent Activity';
+            $workspace['sideItems'] = array_map(
+                fn(Asset $asset): array => [
+                    'label' => 'Registered',
+                    'value' => $asset->name->value,
+                ],
+                array_slice($recentAssets, 0, 3),
+            );
+        }
+
+        if ($path === '/assets') {
+            $workspace['metrics'] = [
+                ['label' => 'Registered assets', 'value' => (string) $registeredCount, 'detail' => 'Stored in the local asset register'],
+                ['label' => 'In service', 'value' => (string) $inServiceCount, 'detail' => 'Ready for monitoring and custody links'],
+                ['label' => 'In storage', 'value' => (string) $inStorageCount, 'detail' => 'Warehouse, spare pool, or staged records'],
+                ['label' => 'Retired', 'value' => (string) $retiredCount, 'detail' => 'Retained for lifecycle history'],
+            ];
+            $workspace['columns'] = ['Asset', 'Status', 'Identifier', 'Source', 'Custodian'];
+            $workspace['rows'] = array_map(
+                fn(Asset $asset): array => [
+                    $asset->name->value,
+                    $this->assetStatusLabel($asset->status),
+                    substr($asset->id->value, 0, 8),
+                    'Registered',
+                    'Unassigned',
+                ],
+                $assets,
+            );
+            $workspace['sideTitle'] = 'Recent Registrations';
+            $workspace['sideItems'] = array_map(
+                fn(Asset $asset): array => [
+                    'label' => $this->assetStatusLabel($asset->status),
+                    'value' => $asset->name->value,
+                ],
+                array_slice($recentAssets, 0, 3),
+            );
+        }
+
+        return $workspace;
+    }
+
+    /**
+     * @param list<Asset> $assets
+     */
+    private function countAssetsByStatus(array $assets, AssetStatus $status): int
+    {
+        return count(array_filter($assets, fn(Asset $asset): bool => $asset->status === $status));
+    }
+
+    private function assetStatusLabel(AssetStatus $status): string
+    {
+        return match ($status) {
+            AssetStatus::InService => 'In service',
+            AssetStatus::InStorage => 'In storage',
+            AssetStatus::Retired => 'Retired',
+        };
     }
 
     /**

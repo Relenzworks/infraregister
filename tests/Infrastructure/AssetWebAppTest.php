@@ -7,6 +7,7 @@ namespace RelenzWorks\InfraRegister\Tests\Infrastructure;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use RelenzWorks\InfraRegister\Application\Asset\RegisterAssetHandler;
+use RelenzWorks\InfraRegister\Domain\Asset\AssetId;
 use RelenzWorks\InfraRegister\Domain\Security\Role;
 use RelenzWorks\InfraRegister\Infrastructure\Http\AssetWebApp;
 use RelenzWorks\InfraRegister\Infrastructure\Persistence\JsonAssetRepository;
@@ -127,6 +128,65 @@ final class AssetWebAppTest extends TestCase
         self::assertStringContainsString('Core Router 01', $contents);
     }
 
+    public function testItRendersRegisteredAssetsOnTheAssetIndex(): void
+    {
+        $path = $this->storePath('asset-index-read-model');
+        $app = AssetWebApp::fromStore($path, dirname($path), 'writer:secret');
+
+        $app->handle($this->postRegister(['name' => 'Live Router 01']));
+        $response = $app->handle(Request::create('/assets'));
+        $content = (string) $response->getContent();
+
+        self::assertSame(200, $response->getStatusCode());
+        self::assertStringContainsString('Registered assets', $content);
+        self::assertStringContainsString('Live Router 01', $content);
+        self::assertStringContainsString('In service', $content);
+        self::assertStringContainsString('Unassigned', $content);
+        self::assertStringNotContainsString('IR-10042 core-atl-01', $content);
+    }
+
+    public function testItRendersNonDefaultAssetStatusesOnTheAssetIndex(): void
+    {
+        $path = $this->storePath('asset-index-statuses');
+        file_put_contents($path, json_encode([
+            [
+                'id' => AssetId::generate()->value,
+                'name' => 'Warehouse Spare Router',
+                'status' => 'in_storage',
+            ],
+            [
+                'id' => AssetId::generate()->value,
+                'name' => 'Retired Access Switch',
+                'status' => 'retired',
+            ],
+        ], JSON_THROW_ON_ERROR));
+
+        $response = AssetWebApp::fromStore($path, dirname($path), 'writer:secret')->handle(Request::create('/assets'));
+        $content = (string) $response->getContent();
+
+        self::assertSame(200, $response->getStatusCode());
+        self::assertStringContainsString('Warehouse Spare Router', $content);
+        self::assertStringContainsString('In storage', $content);
+        self::assertStringContainsString('Retired Access Switch', $content);
+        self::assertStringContainsString('Retired', $content);
+    }
+
+    public function testItRendersRecentRegisteredAssetsOnTheDashboard(): void
+    {
+        $path = $this->storePath('dashboard-read-model');
+        $app = AssetWebApp::fromStore($path, dirname($path), 'writer:secret');
+
+        $app->handle($this->postRegister(['name' => 'Edge Switch 17']));
+        $response = $app->handle(Request::create('/'));
+        $content = (string) $response->getContent();
+
+        self::assertSame(200, $response->getStatusCode());
+        self::assertStringContainsString('Recent Registrations', $content);
+        self::assertStringContainsString('Edge Switch 17', $content);
+        self::assertStringContainsString('Review metadata', $content);
+        self::assertStringNotContainsString('Core router serial mismatch at SJC1', $content);
+    }
+
     public function testItRegistersAShortAssetName(): void
     {
         $response = $this->app('short-name')->handle($this->postRegister([
@@ -238,8 +298,10 @@ final class AssetWebAppTest extends TestCase
     public function testItRejectsAuthenticatedUsersWithoutRegisterPermission(): void
     {
         $path = $this->storePath('viewer-write');
+        $repository = new JsonAssetRepository($path, dirname($path));
         $app = new AssetWebApp(
-            new RegisterAssetHandler(new JsonAssetRepository($path, dirname($path))),
+            new RegisterAssetHandler($repository),
+            $repository,
             new LocalUserDirectory([
                 'viewer' => [
                     'password' => 'secret',

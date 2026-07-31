@@ -29,6 +29,30 @@ final class JsonAssetRepositoryTest extends TestCase
         self::assertSame('Aggregation Switch', $stored->name->value);
     }
 
+    public function testItListsPersistedAssets(): void
+    {
+        $path = $this->storePath('listed-assets.json');
+        $repository = new JsonAssetRepository($path);
+
+        $repository->save(Asset::register(AssetId::generate(), AssetName::fromString('Aggregation Switch')));
+        $repository->save(Asset::register(AssetId::generate(), AssetName::fromString('Edge Router')));
+
+        $assets = $repository->all();
+
+        self::assertCount(2, $assets);
+        self::assertSame('Aggregation Switch', $assets[0]->name->value);
+        self::assertSame('Edge Router', $assets[1]->name->value);
+    }
+
+    public function testItListsNoAssetsBeforeTheStoreDirectoryExists(): void
+    {
+        $path = $this->directory('missing-list-directory-root') . '/nested/assets.json';
+        $repository = new JsonAssetRepository($path);
+
+        self::assertSame([], $repository->all());
+        self::assertFileDoesNotExist($path . '.lock');
+    }
+
     public function testItReturnsNullWhenTheAssetIsMissing(): void
     {
         $repository = new JsonAssetRepository($this->storePath('missing-assets.json'));

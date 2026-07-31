@@ -59,6 +59,25 @@ final class JsonAssetRepository implements AssetRepository
             return null;
         }
 
+        return $this->assetFromRecord($record);
+    }
+
+    /**
+     * @return list<Asset>
+     */
+    public function all(): array
+    {
+        return array_map(
+            fn(array $record): Asset => $this->assetFromRecord($record),
+            array_values($this->readAssets()),
+        );
+    }
+
+    /**
+     * @param array{id: string, name: string, status: string} $record
+     */
+    private function assetFromRecord(array $record): Asset
+    {
         return Asset::reconstitute(
             AssetId::fromString($record['id']),
             AssetName::fromString($record['name']),
