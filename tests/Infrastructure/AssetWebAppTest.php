@@ -140,9 +140,65 @@ final class AssetWebAppTest extends TestCase
         self::assertSame(200, $response->getStatusCode());
         self::assertStringContainsString('Registered assets', $content);
         self::assertStringContainsString('Live Router 01', $content);
+        self::assertStringContainsString('<a href="/assets?id=', $content);
         self::assertStringContainsString('In service', $content);
         self::assertStringContainsString('Unassigned', $content);
         self::assertStringNotContainsString('IR-10042 core-atl-01', $content);
+    }
+
+    public function testItRendersAssetDetailFromTheAssetIndexRoute(): void
+    {
+        $path = $this->storePath('asset-detail');
+        $id = AssetId::generate();
+        file_put_contents($path, json_encode([[
+            'id' => $id->value,
+            'name' => 'Detail Router 01',
+            'status' => 'in_service',
+        ]], JSON_THROW_ON_ERROR));
+
+        $response = AssetWebApp::fromStore($path, dirname($path), 'writer:secret')
+            ->handle(Request::create('/assets', 'GET', ['id' => $id->value]));
+        $content = (string) $response->getContent();
+
+        self::assertSame(200, $response->getStatusCode());
+        self::assertStringContainsString('<h1>Detail Router 01</h1>', $content);
+        self::assertStringContainsString('Asset Tabs', $content);
+        self::assertStringContainsString('Summary', $content);
+        self::assertStringContainsString('Link Monitoring', $content);
+        self::assertStringContainsString(sprintf('Record identifier: %s', $id->value), $content);
+        self::assertStringContainsString('href="/assets" aria-current="page"', $content);
+    }
+
+    public function testItReturnsNotFoundForInvalidAssetDetailIds(): void
+    {
+        $response = $this->app('invalid-detail-id')->handle(Request::create('/assets', 'GET', ['id' => 'not-a-uuid']));
+
+        self::assertSame(404, $response->getStatusCode());
+        self::assertSame('Not Found', $response->getContent());
+    }
+
+    public function testItReturnsNotFoundForArrayAssetDetailIds(): void
+    {
+        $response = $this->app('array-detail-id')->handle(Request::create('/assets', 'GET', ['id' => ['not-a-uuid']]));
+
+        self::assertSame(404, $response->getStatusCode());
+        self::assertSame('Not Found', $response->getContent());
+    }
+
+    public function testItReturnsNotFoundForNonStringAssetDetailIds(): void
+    {
+        $response = $this->app('non-string-detail-id')->handle(Request::create('/assets', 'GET', ['id' => 123]));
+
+        self::assertSame(404, $response->getStatusCode());
+        self::assertSame('Not Found', $response->getContent());
+    }
+
+    public function testItReturnsNotFoundForMissingAssetDetailRecords(): void
+    {
+        $response = $this->app('missing-detail-record')->handle(Request::create('/assets', 'GET', ['id' => AssetId::generate()->value]));
+
+        self::assertSame(404, $response->getStatusCode());
+        self::assertSame('Not Found', $response->getContent());
     }
 
     public function testItRendersNonDefaultAssetStatusesOnTheAssetIndex(): void
