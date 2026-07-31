@@ -1857,6 +1857,24 @@ final class AssetWebApp
                   border-bottom: 0;
                 }
 
+                .side-list a {
+                  display: grid;
+                  gap: 3px;
+                  margin: -12px -16px;
+                  padding: 12px 16px;
+                  border-radius: 6px;
+                  color: inherit;
+                  text-decoration: none;
+                }
+
+                .side-list a:hover {
+                  background: #f4f8fb;
+                }
+
+                .side-list a[aria-current="location"] .side-label {
+                  color: var(--accent-strong);
+                }
+
                 .side-label {
                   color: var(--muted);
                   font-size: 13px;
@@ -2090,7 +2108,7 @@ final class AssetWebApp
             ['label' => 'Signal', 'value' => $item['signal'], 'detail' => 'Queue source'],
         ]);
         $tabs = $this->renderSideItems([
-            ['label' => 'Summary', 'value' => 'Priority, owner, and due date'],
+            ['label' => 'Summary', 'value' => 'Priority, owner, and due date', 'href' => '#attention-summary-title', 'current' => true],
             ['label' => 'Evidence', 'value' => 'Source checks and audit signal'],
             ['label' => 'Links', 'value' => 'Related asset, contract, custody, or import'],
             ['label' => 'Workflow', 'value' => 'Next step and close criteria'],
@@ -2158,7 +2176,7 @@ final class AssetWebApp
             ['label' => 'Owner', 'value' => $signal['owner'], 'detail' => 'Resolver'],
         ]);
         $tabs = $this->renderSideItems([
-            ['label' => 'Summary', 'value' => 'Device, interface, and peer'],
+            ['label' => 'Summary', 'value' => 'Device, interface, and peer', 'href' => '#network-summary-title', 'current' => true],
             ['label' => 'Layer 1', 'value' => 'Speed, media, optic, and circuit'],
             ['label' => 'IPAM', 'value' => 'Prefix, VRF, and assignment context'],
             ['label' => 'Monitoring', 'value' => 'Cacti host and graph links'],
@@ -2225,7 +2243,7 @@ final class AssetWebApp
             ['label' => 'Risk', 'value' => $configuration['risk'], 'detail' => 'Review focus'],
         ]);
         $tabs = $this->renderSideItems([
-            ['label' => 'Summary', 'value' => 'Setting scope and readiness'],
+            ['label' => 'Summary', 'value' => 'Setting scope and readiness', 'href' => '#admin-summary-title', 'current' => true],
             ['label' => 'Policy', 'value' => 'Controls, defaults, and exceptions'],
             ['label' => 'Access', 'value' => 'RBAC and LDAP impact'],
             ['label' => 'Evidence', 'value' => 'Validation and audit records'],
@@ -2293,7 +2311,7 @@ final class AssetWebApp
             ['label' => 'Asset', 'value' => $work['asset'], 'detail' => 'Affected asset'],
         ]);
         $tabs = $this->renderSideItems([
-            ['label' => 'Summary', 'value' => 'Work state and affected asset'],
+            ['label' => 'Summary', 'value' => 'Work state and affected asset', 'href' => '#maintenance-summary-title', 'current' => true],
             ['label' => 'Plan', 'value' => 'Window, risk, and owner'],
             ['label' => 'Spares', 'value' => 'Reserved parts and pool impact'],
             ['label' => 'Evidence', 'value' => 'Photos, approvals, and vendor records'],
@@ -2361,7 +2379,7 @@ final class AssetWebApp
             ['label' => 'Owner', 'value' => $report['owner'], 'detail' => 'Report owner'],
         ]);
         $tabs = $this->renderSideItems([
-            ['label' => 'Summary', 'value' => 'Report purpose and audience'],
+            ['label' => 'Summary', 'value' => 'Report purpose and audience', 'href' => '#report-summary-title', 'current' => true],
             ['label' => 'Filters', 'value' => 'Saved query constraints'],
             ['label' => 'Schedule', 'value' => 'Cadence and delivery'],
             ['label' => 'Exports', 'value' => 'CSV, PDF, and retention'],
@@ -2430,7 +2448,7 @@ final class AssetWebApp
             ['label' => 'Owner', 'value' => $contract['owner'], 'detail' => 'Accountable team'],
         ]);
         $tabs = $this->renderSideItems([
-            ['label' => 'Summary', 'value' => 'Commercial state and ownership'],
+            ['label' => 'Summary', 'value' => 'Commercial state and ownership', 'href' => '#contract-summary-title', 'current' => true],
             ['label' => 'Coverage', 'value' => 'Covered and uncovered assets'],
             ['label' => 'Documents', 'value' => 'Quotes, invoices, and terms'],
             ['label' => 'Approvals', 'value' => 'Budget and renewal decisions'],
@@ -2497,7 +2515,7 @@ final class AssetWebApp
             ['label' => 'Owner', 'value' => $batch['owner'], 'detail' => 'Receiving owner'],
         ]);
         $tabs = $this->renderSideItems([
-            ['label' => 'Summary', 'value' => 'PO and receiving state'],
+            ['label' => 'Summary', 'value' => 'PO and receiving state', 'href' => '#receiving-summary-title', 'current' => true],
             ['label' => 'Lines', 'value' => 'Expected models and quantities'],
             ['label' => 'Serials', 'value' => 'Captured identities'],
             ['label' => 'Labels', 'value' => 'Print queue'],
@@ -2564,7 +2582,7 @@ final class AssetWebApp
             ['label' => 'State', 'value' => $batch['state'], 'detail' => 'Current import stage'],
         ]);
         $tabs = $this->renderSideItems([
-            ['label' => 'Summary', 'value' => 'Batch state and ownership'],
+            ['label' => 'Summary', 'value' => 'Batch state and ownership', 'href' => '#import-summary-title', 'current' => true],
             ['label' => 'Mapping', 'value' => 'Source to asset fields'],
             ['label' => 'Validation', 'value' => 'Errors and duplicate signals'],
             ['label' => 'Preview', 'value' => 'Create and update plan'],
@@ -2631,7 +2649,7 @@ final class AssetWebApp
             ['label' => 'Owner', 'value' => $exception['owner'], 'detail' => 'Team accountable'],
         ]);
         $tabs = $this->renderSideItems([
-            ['label' => 'Summary', 'value' => 'Signal and ownership'],
+            ['label' => 'Summary', 'value' => 'Signal and ownership', 'href' => '#monitoring-summary-title', 'current' => true],
             ['label' => 'Cacti Host', 'value' => 'Polling and graph context'],
             ['label' => 'Asset Link', 'value' => 'Identity reconciliation'],
             ['label' => 'History', 'value' => 'Prior reconcile runs'],
@@ -2698,7 +2716,7 @@ final class AssetWebApp
             ['label' => 'Due', 'value' => $transfer['due'], 'detail' => 'Next acceptance checkpoint'],
         ]);
         $tabs = $this->renderSideItems([
-            ['label' => 'Summary', 'value' => 'Route and transfer state'],
+            ['label' => 'Summary', 'value' => 'Route and transfer state', 'href' => '#custody-summary-title', 'current' => true],
             ['label' => 'Assets', 'value' => 'Items in handoff'],
             ['label' => 'Evidence', 'value' => 'Photos and acknowledgements'],
             ['label' => 'Comments', 'value' => 'Operational notes'],
@@ -2764,7 +2782,7 @@ final class AssetWebApp
             ['label' => 'Power', 'value' => $location['power'], 'detail' => 'Power context'],
         ]);
         $tabs = $this->renderSideItems([
-            ['label' => 'Summary', 'value' => 'Capacity and access'],
+            ['label' => 'Summary', 'value' => 'Capacity and access', 'href' => '#location-summary-title', 'current' => true],
             ['label' => 'Assets', 'value' => 'Contained inventory'],
             ['label' => 'Rack Elevation', 'value' => 'Placement plan'],
             ['label' => 'Power', 'value' => 'Feed and circuit map'],
@@ -2828,7 +2846,7 @@ final class AssetWebApp
             ['label' => 'Audit', 'value' => 'New', 'detail' => 'Metadata review pending'],
         ]);
         $tabs = $this->renderSideItems([
-            ['label' => 'Summary', 'value' => 'Identity and lifecycle'],
+            ['label' => 'Summary', 'value' => 'Identity and lifecycle', 'href' => '#asset-summary-title', 'current' => true],
             ['label' => 'Hardware', 'value' => 'Serial, vendor, model'],
             ['label' => 'Network', 'value' => 'Interfaces, IPs, circuits'],
             ['label' => 'Custody', 'value' => 'Assignments and transfers'],
@@ -3607,13 +3625,26 @@ final class AssetWebApp
     }
 
     /**
-     * @param list<array{label: string, value: string}> $items
+     * @param list<array{label: string, value: string, href?: string, current?: bool}> $items
      */
     private function renderSideItems(array $items): string
     {
         $html = '';
 
         foreach ($items as $item) {
+            if (isset($item['href'])) {
+                $current = ($item['current'] ?? false) ? ' aria-current="location"' : '';
+                $html .= sprintf(
+                    '<li><a href="%s"%s><span class="side-label">%s</span><span class="side-value">%s</span></a></li>',
+                    $this->escape($item['href']),
+                    $current,
+                    $this->escape($item['label']),
+                    $this->escape($item['value']),
+                );
+
+                continue;
+            }
+
             $html .= sprintf(
                 '<li><span class="side-label">%s</span><span class="side-value">%s</span></li>',
                 $this->escape($item['label']),

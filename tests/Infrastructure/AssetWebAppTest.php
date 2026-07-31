@@ -170,7 +170,14 @@ final class AssetWebAppTest extends TestCase
         self::assertStringContainsString('<h1>Detail Router 01</h1>', $content);
         self::assertStringContainsString('<span class="metadata">Inventory / In service</span>', $content);
         self::assertStringContainsString('Asset Tabs', $content);
-        self::assertStringContainsString('Summary', $content);
+        self::assertStringContainsString(
+            '<a href="#asset-summary-title" aria-current="location"><span class="side-label">Summary</span><span class="side-value">Identity and lifecycle</span></a>',
+            $content,
+        );
+        self::assertStringContainsString(
+            '<li><span class="side-label">Metadata</span><span class="side-value">Add asset tag, serial, type, vendor, and model.</span></li>',
+            $content,
+        );
         self::assertStringContainsString(
             '<span class="secondary-action" aria-disabled="true">Link Monitoring</span>',
             $content,
