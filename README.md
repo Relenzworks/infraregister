@@ -21,4 +21,8 @@ composer quality
 composer test:coverage
 php bin/infraregister asset:register "Core Router 01"
 tools/test-docker-platforms.sh ubuntu-24.04 rocky-9
+docker build -f docker/app.Dockerfile -t infraregister-app .
+docker run --rm -e INFRAREGISTER_WRITE_AUTH=infraregister:local-dev -p 127.0.0.1:8080:8080 infraregister-app
 ```
+
+The web entrypoint is a Phase 1 local development surface. Registration writes require `INFRAREGISTER_WRITE_AUTH` Basic Auth credentials and the documented Docker command binds the published port to loopback.
