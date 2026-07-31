@@ -63,6 +63,7 @@ final class AssetWebAppTest extends TestCase
         yield 'dashboard' => ['/', 'Operations Overview', 'Attention Queue', 'Tracked assets'];
         yield 'assets' => ['/assets', 'Asset Index', 'Asset Register', 'Routers'];
         yield 'register' => ['/assets/register', 'Asset Registration', 'Full Registration Flow', 'Identity'];
+        yield 'imports' => ['/imports', 'Bulk Import', 'Import Batches', 'Staged rows'];
         yield 'network' => ['/network', 'Network Inventory', 'Topology Worklist', 'Interfaces'];
         yield 'locations' => ['/locations', 'Location Directory', 'Location Directory', 'Sites'];
         yield 'custody' => ['/custody', 'Custody Queue', 'Custody Transfers', 'Pending transfers'];
@@ -290,6 +291,37 @@ final class AssetWebAppTest extends TestCase
     public function testItReturnsNotFoundForUnknownMonitoringExceptionIds(): void
     {
         $response = $this->app('unknown-monitoring-exception')->handle(Request::create('/monitoring', 'GET', ['id' => 'unknown-exception']));
+
+        self::assertSame(404, $response->getStatusCode());
+        self::assertSame('Not Found', $response->getContent());
+    }
+
+    public function testItLinksImportRowsToBatchDetail(): void
+    {
+        $response = $this->app('import-index-links')->handle(Request::create('/imports'));
+        $content = (string) $response->getContent();
+
+        self::assertSame(200, $response->getStatusCode());
+        self::assertStringContainsString('<a href="/imports?id=imp-2041">IMP-2041</a>', $content);
+        self::assertStringContainsString('<a href="/imports?id=imp-2043">IMP-2043</a>', $content);
+    }
+
+    public function testItRendersImportBatchDetailFromTheImportRoute(): void
+    {
+        $response = $this->app('import-detail')->handle(Request::create('/imports', 'GET', ['id' => 'imp-2041']));
+        $content = (string) $response->getContent();
+
+        self::assertSame(200, $response->getStatusCode());
+        self::assertStringContainsString('<h1>IMP-2041</h1>', $content);
+        self::assertStringContainsString('Import Tabs', $content);
+        self::assertStringContainsString('Commit Import', $content);
+        self::assertStringContainsString('Review commit summary', $content);
+        self::assertStringContainsString('href="/imports" aria-current="page"', $content);
+    }
+
+    public function testItReturnsNotFoundForUnknownImportBatchIds(): void
+    {
+        $response = $this->app('unknown-import-batch')->handle(Request::create('/imports', 'GET', ['id' => 'imp-9999']));
 
         self::assertSame(404, $response->getStatusCode());
         self::assertSame('Not Found', $response->getContent());

@@ -66,6 +66,17 @@ final class AssetWebApp
                 ['title' => 'Ownership', 'body' => 'Owner, custodian, department, cost center, and monitoring link.'],
             ],
         ],
+        '/imports' => [
+            'label' => 'Imports',
+            'section' => 'Inventory',
+            'title' => 'Bulk Import',
+            'summary' => 'Validate staged asset data before creating or updating inventory records.',
+            'items' => [
+                ['title' => 'Upload', 'body' => 'CSV batches with field mapping, source tracking, and operator ownership.'],
+                ['title' => 'Validate', 'body' => 'Required fields, duplicate signals, status mapping, and referential checks.'],
+                ['title' => 'Commit', 'body' => 'Review summary, create records, update safe fields, and preserve audit evidence.'],
+            ],
+        ],
         '/network' => [
             'label' => 'Network',
             'section' => 'Infrastructure',
@@ -223,6 +234,28 @@ final class AssetWebApp
                 ['label' => 'Core routers', 'value' => '426 assets'],
                 ['label' => 'Audit stale', 'value' => '64 assets'],
                 ['label' => 'No monitoring link', 'value' => '42 assets'],
+            ],
+        ],
+        '/imports' => [
+            'actions' => ['Upload CSV', 'Map Fields', 'Validate Batch'],
+            'metrics' => [
+                ['label' => 'Staged rows', 'value' => '2,148', 'detail' => 'Across three import batches'],
+                ['label' => 'Valid rows', 'value' => '2,091', 'detail' => 'Ready for commit review'],
+                ['label' => 'Blocked rows', 'value' => '57', 'detail' => 'Duplicates or missing required fields'],
+                ['label' => 'Pending commits', 'value' => '2', 'detail' => 'Awaiting operator approval'],
+            ],
+            'tableTitle' => 'Import Batches',
+            'columns' => ['Batch', 'Source', 'Rows', 'State', 'Owner'],
+            'rows' => [
+                ['IMP-2041', 'Warehouse cycle count', '1,284', 'Validated', 'Supply'],
+                ['IMP-2042', 'CPE deployment sheet', '512', 'Needs mapping', 'Field Ops'],
+                ['IMP-2043', 'Core optics audit', '352', 'Blocked', 'NetOps'],
+            ],
+            'sideTitle' => 'Validation Signals',
+            'sideItems' => [
+                ['label' => 'Duplicate serials', 'value' => '19 rows'],
+                ['label' => 'Unknown asset types', 'value' => '23 rows'],
+                ['label' => 'Missing custody', 'value' => '15 rows'],
             ],
         ],
         '/network' => [
@@ -594,6 +627,51 @@ final class AssetWebApp
         ],
     ];
 
+    /**
+     * @var array<string, array{
+     *     number: string,
+     *     source: string,
+     *     rows: string,
+     *     state: string,
+     *     owner: string,
+     *     valid: string,
+     *     blocked: string,
+     *     next: string
+     * }>
+     */
+    private const array IMPORT_BATCHES = [
+        'imp-2041' => [
+            'number' => 'IMP-2041',
+            'source' => 'Warehouse cycle count',
+            'rows' => '1,284',
+            'state' => 'Validated',
+            'owner' => 'Supply',
+            'valid' => '1,281',
+            'blocked' => '3',
+            'next' => 'Review commit summary',
+        ],
+        'imp-2042' => [
+            'number' => 'IMP-2042',
+            'source' => 'CPE deployment sheet',
+            'rows' => '512',
+            'state' => 'Needs mapping',
+            'owner' => 'Field Ops',
+            'valid' => '498',
+            'blocked' => '14',
+            'next' => 'Map customer premise fields',
+        ],
+        'imp-2043' => [
+            'number' => 'IMP-2043',
+            'source' => 'Core optics audit',
+            'rows' => '352',
+            'state' => 'Blocked',
+            'owner' => 'NetOps',
+            'valid' => '312',
+            'blocked' => '40',
+            'next' => 'Resolve duplicate optic serials',
+        ],
+    ];
+
     public function __construct(
         private readonly RegisterAssetHandler $registerAsset,
         private readonly AssetRepository $assetRepository,
@@ -686,6 +764,7 @@ final class AssetWebApp
                 && $path !== '/locations'
                 && $path !== '/custody'
                 && $path !== '/monitoring'
+                && $path !== '/imports'
             )
             || !$request->query->has('id')
         ) {
@@ -708,6 +787,10 @@ final class AssetWebApp
 
         if ($path === '/monitoring') {
             return $this->render($path, monitoringExceptionId: $id);
+        }
+
+        if ($path === '/imports') {
+            return $this->render($path, importBatchId: $id);
         }
 
         try {
@@ -737,12 +820,14 @@ final class AssetWebApp
         ?string $locationId = null,
         ?string $custodyTransferId = null,
         ?string $monitoringExceptionId = null,
+        ?string $importBatchId = null,
     ): Response {
         $screen = self::SCREENS[$path];
         $detailAsset = $detailAssetId === null ? null : $this->assetRepository->get($detailAssetId);
         $location = $locationId === null ? null : (self::LOCATIONS[$locationId] ?? null);
         $custodyTransfer = $custodyTransferId === null ? null : (self::CUSTODY_TRANSFERS[$custodyTransferId] ?? null);
         $monitoringException = $monitoringExceptionId === null ? null : (self::MONITORING_EXCEPTIONS[$monitoringExceptionId] ?? null);
+        $importBatch = $importBatchId === null ? null : (self::IMPORT_BATCHES[$importBatchId] ?? null);
 
         if ($detailAssetId !== null && $detailAsset === null) {
             return new Response('Not Found', Response::HTTP_NOT_FOUND);
@@ -757,6 +842,10 @@ final class AssetWebApp
         }
 
         if ($monitoringExceptionId !== null && $monitoringException === null) {
+            return new Response('Not Found', Response::HTTP_NOT_FOUND);
+        }
+
+        if ($importBatchId !== null && $importBatch === null) {
             return new Response('Not Found', Response::HTTP_NOT_FOUND);
         }
 
@@ -800,6 +889,16 @@ final class AssetWebApp
             ];
         }
 
+        if ($importBatch !== null) {
+            $screen = [
+                'label' => 'Imports',
+                'section' => 'Inventory',
+                'title' => $importBatch['number'],
+                'summary' => sprintf('%s import with %s rows is %s.', $importBatch['source'], $importBatch['rows'], strtolower($importBatch['state'])),
+                'items' => [],
+            ];
+        }
+
         $successHtml = $success === null ? '' : sprintf(
             '<p class="notice" role="status">%s</p>',
             $this->escape($success),
@@ -817,6 +916,7 @@ final class AssetWebApp
             $location !== null => $this->renderLocationDetailContent($location),
             $custodyTransfer !== null => $this->renderCustodyTransferDetailContent($custodyTransfer),
             $monitoringException !== null => $this->renderMonitoringExceptionDetailContent($monitoringException),
+            $importBatch !== null => $this->renderImportBatchDetailContent($importBatch),
             $path === '/assets/register' => $this->renderRegistrationContent($screen, $successHtml, $errorHtml, $inputDescription),
             default => $this->renderScreenContent($path, $screen),
         };
@@ -1343,6 +1443,73 @@ final class AssetWebApp
     }
 
     /**
+     * @param array{number: string, source: string, rows: string, state: string, owner: string, valid: string, blocked: string, next: string} $batch
+     */
+    private function renderImportBatchDetailContent(array $batch): string
+    {
+        $summary = $this->renderTable(
+            ['Field', 'Value'],
+            [
+                ['Batch', $batch['number']],
+                ['Source', $batch['source']],
+                ['Rows', $batch['rows']],
+                ['Valid Rows', $batch['valid']],
+                ['Blocked Rows', $batch['blocked']],
+                ['State', $batch['state']],
+                ['Owner', $batch['owner']],
+                ['Next Step', $batch['next']],
+            ],
+        );
+        $metrics = $this->renderMetrics([
+            ['label' => 'Rows', 'value' => $batch['rows'], 'detail' => 'Uploaded records'],
+            ['label' => 'Valid', 'value' => $batch['valid'], 'detail' => 'Ready for commit review'],
+            ['label' => 'Blocked', 'value' => $batch['blocked'], 'detail' => 'Require correction'],
+            ['label' => 'State', 'value' => $batch['state'], 'detail' => 'Current import stage'],
+        ]);
+        $tabs = $this->renderSideItems([
+            ['label' => 'Summary', 'value' => 'Batch state and ownership'],
+            ['label' => 'Mapping', 'value' => 'Source to asset fields'],
+            ['label' => 'Validation', 'value' => 'Errors and duplicate signals'],
+            ['label' => 'Preview', 'value' => 'Create and update plan'],
+            ['label' => 'Audit', 'value' => 'Import evidence'],
+        ]);
+        $actions = $this->renderActions(['Map Fields', 'Validate Batch', 'Commit Import', 'Export Errors']);
+
+        return <<<HTML
+            {$metrics}
+            <div class="workspace-grid">
+              <div class="workspace">
+                <section class="panel" aria-labelledby="import-summary-title">
+                  <div class="panel-header">
+                    <h2 id="import-summary-title">Summary</h2>
+                    <div class="toolbar" aria-label="Import actions">
+                      {$actions}
+                    </div>
+                  </div>
+                  {$summary}
+                </section>
+                <section class="panel" aria-labelledby="import-work-title">
+                  <div class="panel-header">
+                    <h2 id="import-work-title">Import Work</h2>
+                  </div>
+                  <ul class="side-list">
+                    <li><span class="side-label">Mapping</span><span class="side-value">Confirm source columns before validation and preview.</span></li>
+                    <li><span class="side-label">Validation</span><span class="side-value">Resolve duplicate identities, missing required fields, and unsafe updates.</span></li>
+                    <li><span class="side-label">Commit</span><span class="side-value">Create records only after summary review and audit capture.</span></li>
+                  </ul>
+                </section>
+              </div>
+              <aside class="panel" aria-labelledby="import-tabs-title">
+                <div class="panel-header">
+                  <h2 id="import-tabs-title">Import Tabs</h2>
+                </div>
+                {$tabs}
+              </aside>
+            </div>
+            HTML;
+    }
+
+    /**
      * @param array{signal: string, asset: string, host: string, action: string, severity: string, source: string, owner: string, next: string} $exception
      */
     private function renderMonitoringExceptionDetailContent(array $exception): string
@@ -1726,6 +1893,10 @@ final class AssetWebApp
             return $this->monitoringIndexWorkspace($workspace);
         }
 
+        if ($path === '/imports') {
+            return $this->importIndexWorkspace($workspace);
+        }
+
         $assets = $this->assetRepository->all();
 
         if ($assets === []) {
@@ -1903,6 +2074,44 @@ final class AssetWebApp
                 $exception['asset'],
                 $exception['host'],
                 $exception['action'],
+            ];
+        }
+
+        return $workspace;
+    }
+
+    /**
+     * @param array{
+     *     actions: list<string>,
+     *     metrics: list<array{label: string, value: string, detail: string}>,
+     *     tableTitle: string,
+     *     columns: list<string>,
+     *     rows: list<list<string>>,
+     *     sideTitle: string,
+     *     sideItems: list<array{label: string, value: string}>
+     * } $workspace
+     *
+     * @return array{
+     *     actions: list<string>,
+     *     metrics: list<array{label: string, value: string, detail: string}>,
+     *     tableTitle: string,
+     *     columns: list<string>,
+     *     rows: list<list<string>>,
+     *     sideTitle: string,
+     *     sideItems: list<array{label: string, value: string}>
+     * }
+     */
+    private function importIndexWorkspace(array $workspace): array
+    {
+        $workspace['rows'] = [];
+
+        foreach (self::IMPORT_BATCHES as $id => $batch) {
+            $workspace['rows'][] = [
+                $this->internalLinkCell('/imports?id=' . $id, $batch['number']),
+                $batch['source'],
+                $batch['rows'],
+                $batch['state'],
+                $batch['owner'],
             ];
         }
 
