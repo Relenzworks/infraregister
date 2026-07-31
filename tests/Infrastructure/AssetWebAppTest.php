@@ -420,6 +420,37 @@ final class AssetWebAppTest extends TestCase
         self::assertSame('Not Found', $response->getContent());
     }
 
+    public function testItLinksMaintenanceRowsToWorkDetail(): void
+    {
+        $response = $this->app('maintenance-index-links')->handle(Request::create('/maintenance'));
+        $content = (string) $response->getContent();
+
+        self::assertSame(200, $response->getStatusCode());
+        self::assertStringContainsString('<a href="/maintenance?id=mw-2041">MW-2041</a>', $content);
+        self::assertStringContainsString('<a href="/maintenance?id=ret-4412">RET-4412</a>', $content);
+    }
+
+    public function testItRendersMaintenanceWorkDetailFromTheMaintenanceRoute(): void
+    {
+        $response = $this->app('maintenance-detail')->handle(Request::create('/maintenance', 'GET', ['id' => 'mw-2041']));
+        $content = (string) $response->getContent();
+
+        self::assertSame(200, $response->getStatusCode());
+        self::assertStringContainsString('<h1>MW-2041</h1>', $content);
+        self::assertStringContainsString('Maintenance Tabs', $content);
+        self::assertStringContainsString('Close Work', $content);
+        self::assertStringContainsString('Confirm change approval before dispatch', $content);
+        self::assertStringContainsString('href="/maintenance" aria-current="page"', $content);
+    }
+
+    public function testItReturnsNotFoundForUnknownMaintenanceWorkIds(): void
+    {
+        $response = $this->app('unknown-maintenance-work')->handle(Request::create('/maintenance', 'GET', ['id' => 'mw-9999']));
+
+        self::assertSame(404, $response->getStatusCode());
+        self::assertSame('Not Found', $response->getContent());
+    }
+
     public function testItRendersNonDefaultAssetStatusesOnTheAssetIndex(): void
     {
         $path = $this->storePath('asset-index-statuses');

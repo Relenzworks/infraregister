@@ -852,6 +852,66 @@ final class AssetWebApp
         ],
     ];
 
+    /**
+     * @var array<string, array{
+     *     number: string,
+     *     asset: string,
+     *     window: string,
+     *     owner: string,
+     *     state: string,
+     *     type: string,
+     *     risk: string,
+     *     spare: string,
+     *     next: string
+     * }>
+     */
+    private const array MAINTENANCE_WORK = [
+        'mw-2041' => [
+            'number' => 'MW-2041',
+            'asset' => 'core-atl-01',
+            'window' => 'Tonight 23:00',
+            'owner' => 'NetOps',
+            'state' => 'Ready',
+            'type' => 'Maintenance window',
+            'risk' => 'Core routing redundancy verified',
+            'spare' => 'Linecard reserved',
+            'next' => 'Confirm change approval before dispatch',
+        ],
+        'rma-8841' => [
+            'number' => 'RMA-8841',
+            'asset' => 'linecard-sjc-04',
+            'window' => 'Vendor ship',
+            'owner' => 'Supply',
+            'state' => 'Waiting',
+            'type' => 'Vendor RMA',
+            'risk' => 'Replacement ETA not confirmed',
+            'spare' => 'Temporary spare installed',
+            'next' => 'Update vendor shipment evidence',
+        ],
+        'mw-2047' => [
+            'number' => 'MW-2047',
+            'asset' => 'UPS-DAL-02',
+            'window' => 'Saturday 02:00',
+            'owner' => 'Facilities',
+            'state' => 'Review',
+            'type' => 'Power maintenance',
+            'risk' => 'Customer aggregation room impact',
+            'spare' => 'Bypass plan required',
+            'next' => 'Attach reviewed power plan',
+        ],
+        'ret-4412' => [
+            'number' => 'RET-4412',
+            'asset' => 'CPE batch 2021',
+            'window' => 'Queued',
+            'owner' => 'Field Ops',
+            'state' => 'Dispose',
+            'type' => 'Retirement disposition',
+            'risk' => 'Data wipe evidence required',
+            'spare' => 'No spare required',
+            'next' => 'Record disposal certificate',
+        ],
+    ];
+
     public function __construct(
         private readonly RegisterAssetHandler $registerAsset,
         private readonly AssetRepository $assetRepository,
@@ -948,6 +1008,7 @@ final class AssetWebApp
                 && $path !== '/procurement'
                 && $path !== '/contracts'
                 && $path !== '/reports'
+                && $path !== '/maintenance'
             )
             || !$request->query->has('id')
         ) {
@@ -988,6 +1049,10 @@ final class AssetWebApp
             return $this->render($path, savedReportId: $id);
         }
 
+        if ($path === '/maintenance') {
+            return $this->render($path, maintenanceWorkId: $id);
+        }
+
         try {
             return $this->render($path, detailAssetId: AssetId::fromString($id));
         } catch (InvalidArgumentException) {
@@ -1019,6 +1084,7 @@ final class AssetWebApp
         ?string $receivingBatchId = null,
         ?string $contractRenewalId = null,
         ?string $savedReportId = null,
+        ?string $maintenanceWorkId = null,
     ): Response {
         $screen = self::SCREENS[$path];
         $detailAsset = $detailAssetId === null ? null : $this->assetRepository->get($detailAssetId);
@@ -1029,6 +1095,7 @@ final class AssetWebApp
         $receivingBatch = $receivingBatchId === null ? null : (self::RECEIVING_BATCHES[$receivingBatchId] ?? null);
         $contractRenewal = $contractRenewalId === null ? null : (self::CONTRACT_RENEWALS[$contractRenewalId] ?? null);
         $savedReport = $savedReportId === null ? null : (self::SAVED_REPORTS[$savedReportId] ?? null);
+        $maintenanceWork = $maintenanceWorkId === null ? null : (self::MAINTENANCE_WORK[$maintenanceWorkId] ?? null);
 
         if ($detailAssetId !== null && $detailAsset === null) {
             return new Response('Not Found', Response::HTTP_NOT_FOUND);
@@ -1059,6 +1126,10 @@ final class AssetWebApp
         }
 
         if ($savedReportId !== null && $savedReport === null) {
+            return new Response('Not Found', Response::HTTP_NOT_FOUND);
+        }
+
+        if ($maintenanceWorkId !== null && $maintenanceWork === null) {
             return new Response('Not Found', Response::HTTP_NOT_FOUND);
         }
 
@@ -1142,6 +1213,16 @@ final class AssetWebApp
             ];
         }
 
+        if ($maintenanceWork !== null) {
+            $screen = [
+                'label' => 'Maintenance',
+                'section' => 'Operations',
+                'title' => $maintenanceWork['number'],
+                'summary' => sprintf('%s for %s is %s with window %s.', $maintenanceWork['type'], $maintenanceWork['asset'], strtolower($maintenanceWork['state']), $maintenanceWork['window']),
+                'items' => [],
+            ];
+        }
+
         $successHtml = $success === null ? '' : sprintf(
             '<p class="notice" role="status">%s</p>',
             $this->escape($success),
@@ -1163,6 +1244,7 @@ final class AssetWebApp
             $receivingBatch !== null => $this->renderReceivingBatchDetailContent($receivingBatch),
             $contractRenewal !== null => $this->renderContractRenewalDetailContent($contractRenewal),
             $savedReport !== null => $this->renderSavedReportDetailContent($savedReport),
+            $maintenanceWork !== null => $this->renderMaintenanceWorkDetailContent($maintenanceWork),
             $path === '/assets/register' => $this->renderRegistrationContent($screen, $successHtml, $errorHtml, $inputDescription),
             default => $this->renderScreenContent($path, $screen),
         };
@@ -1686,6 +1768,74 @@ final class AssetWebApp
             </body>
             </html>
             HTML, $status);
+    }
+
+    /**
+     * @param array{number: string, asset: string, window: string, owner: string, state: string, type: string, risk: string, spare: string, next: string} $work
+     */
+    private function renderMaintenanceWorkDetailContent(array $work): string
+    {
+        $summary = $this->renderTable(
+            ['Field', 'Value'],
+            [
+                ['Work', $work['number']],
+                ['Asset', $work['asset']],
+                ['Type', $work['type']],
+                ['Window', $work['window']],
+                ['Owner', $work['owner']],
+                ['State', $work['state']],
+                ['Risk', $work['risk']],
+                ['Spare', $work['spare']],
+                ['Next Step', $work['next']],
+            ],
+        );
+        $metrics = $this->renderMetrics([
+            ['label' => 'State', 'value' => $work['state'], 'detail' => 'Work status'],
+            ['label' => 'Window', 'value' => $work['window'], 'detail' => 'Planned timing'],
+            ['label' => 'Owner', 'value' => $work['owner'], 'detail' => 'Responsible team'],
+            ['label' => 'Asset', 'value' => $work['asset'], 'detail' => 'Affected asset'],
+        ]);
+        $tabs = $this->renderSideItems([
+            ['label' => 'Summary', 'value' => 'Work state and affected asset'],
+            ['label' => 'Plan', 'value' => 'Window, risk, and owner'],
+            ['label' => 'Spares', 'value' => 'Reserved parts and pool impact'],
+            ['label' => 'Evidence', 'value' => 'Photos, approvals, and vendor records'],
+            ['label' => 'Audit', 'value' => 'Lifecycle event history'],
+        ]);
+        $actions = $this->renderActions(['Schedule Window', 'Reserve Spare', 'Update RMA', 'Close Work']);
+
+        return <<<HTML
+            {$metrics}
+            <div class="workspace-grid">
+              <div class="workspace">
+                <section class="panel" aria-labelledby="maintenance-summary-title">
+                  <div class="panel-header">
+                    <h2 id="maintenance-summary-title">Summary</h2>
+                    <div class="toolbar" aria-label="Maintenance actions">
+                      {$actions}
+                    </div>
+                  </div>
+                  {$summary}
+                </section>
+                <section class="panel" aria-labelledby="maintenance-work-title">
+                  <div class="panel-header">
+                    <h2 id="maintenance-work-title">Maintenance Work</h2>
+                  </div>
+                  <ul class="side-list">
+                    <li><span class="side-label">Impact</span><span class="side-value">Confirm customer, redundancy, and service-risk context before work starts.</span></li>
+                    <li><span class="side-label">Spares</span><span class="side-value">Reserve parts, track temporary installs, and update spare-pool thresholds.</span></li>
+                    <li><span class="side-label">Evidence</span><span class="side-value">Attach approvals, vendor shipment records, photos, and disposition certificates.</span></li>
+                  </ul>
+                </section>
+              </div>
+              <aside class="panel" aria-labelledby="maintenance-tabs-title">
+                <div class="panel-header">
+                  <h2 id="maintenance-tabs-title">Maintenance Tabs</h2>
+                </div>
+                {$tabs}
+              </aside>
+            </div>
+            HTML;
     }
 
     /**
@@ -2359,6 +2509,10 @@ final class AssetWebApp
             return $this->reportIndexWorkspace($workspace);
         }
 
+        if ($path === '/maintenance') {
+            return $this->maintenanceIndexWorkspace($workspace);
+        }
+
         $assets = $this->assetRepository->all();
 
         if ($assets === []) {
@@ -2686,6 +2840,44 @@ final class AssetWebApp
                 $report['audience'],
                 $report['cadence'],
                 $report['lastRun'],
+            ];
+        }
+
+        return $workspace;
+    }
+
+    /**
+     * @param array{
+     *     actions: list<string>,
+     *     metrics: list<array{label: string, value: string, detail: string}>,
+     *     tableTitle: string,
+     *     columns: list<string>,
+     *     rows: list<list<string>>,
+     *     sideTitle: string,
+     *     sideItems: list<array{label: string, value: string}>
+     * } $workspace
+     *
+     * @return array{
+     *     actions: list<string>,
+     *     metrics: list<array{label: string, value: string, detail: string}>,
+     *     tableTitle: string,
+     *     columns: list<string>,
+     *     rows: list<list<string>>,
+     *     sideTitle: string,
+     *     sideItems: list<array{label: string, value: string}>
+     * }
+     */
+    private function maintenanceIndexWorkspace(array $workspace): array
+    {
+        $workspace['rows'] = [];
+
+        foreach (self::MAINTENANCE_WORK as $id => $work) {
+            $workspace['rows'][] = [
+                $this->internalLinkCell('/maintenance?id=' . $id, $work['number']),
+                $work['asset'],
+                $work['window'],
+                $work['owner'],
+                $work['state'],
             ];
         }
 
