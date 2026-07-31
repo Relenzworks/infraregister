@@ -70,6 +70,10 @@ final class RegisterAssetWebTest extends TestCase
 
     private function phpBinary(): string
     {
+        if (PHP_SAPI === 'phpdbg') {
+            return 'php';
+        }
+
         return PHP_BINARY;
     }
 

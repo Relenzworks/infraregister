@@ -6,6 +6,7 @@ RUN dnf -y module reset php \
         git \
         php-cli \
         php-json \
+        php-ldap \
         php-mbstring \
         php-process \
         php-xml \
