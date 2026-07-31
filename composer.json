@@ -2,7 +2,7 @@
   "name": "relenzworks/infraregister",
   "description": "Infrastructure asset records and lifecycle operations for ISP and enterprise environments.",
   "type": "library",
-  "license": "MIT",
+  "license": "GPL-3.0-or-later",
   "require": {
     "php": "^8.3",
     "symfony/uid": "^6.4 || ^7.0",
