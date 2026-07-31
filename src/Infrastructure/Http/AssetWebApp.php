@@ -484,6 +484,61 @@ final class AssetWebApp
         ],
     ];
 
+    /**
+     * @var array<string, array{
+     *     number: string,
+     *     assets: string,
+     *     from: string,
+     *     to: string,
+     *     state: string,
+     *     owner: string,
+     *     due: string,
+     *     evidence: string
+     * }>
+     */
+    private const array CUSTODY_TRANSFERS = [
+        'tr-1044' => [
+            'number' => 'TR-1044',
+            'assets' => '7',
+            'from' => 'RNO Warehouse',
+            'to' => 'Truck NV-12',
+            'state' => 'Pending accept',
+            'owner' => 'Field Ops West',
+            'due' => 'Today',
+            'evidence' => 'Receiver acknowledgement required',
+        ],
+        'tr-1045' => [
+            'number' => 'TR-1045',
+            'assets' => '1',
+            'from' => 'NetOps',
+            'to' => 'Vendor RMA',
+            'state' => 'In transit',
+            'owner' => 'Maintenance',
+            'due' => '3 days',
+            'evidence' => 'Carrier tracking attached',
+        ],
+        'tr-1046' => [
+            'number' => 'TR-1046',
+            'assets' => '12',
+            'from' => 'ATL Stores',
+            'to' => 'Field Ops East',
+            'state' => 'Draft',
+            'owner' => 'Supply',
+            'due' => 'This week',
+            'evidence' => 'Awaiting pick list',
+        ],
+        'tr-1047' => [
+            'number' => 'TR-1047',
+            'assets' => '3',
+            'from' => 'Truck CO-04',
+            'to' => 'DEN2 Cage B',
+            'state' => 'Overdue',
+            'owner' => 'Regional Ops',
+            'due' => 'Yesterday',
+            'evidence' => 'No receiver photo',
+        ],
+    ];
+
     public function __construct(
         private readonly RegisterAssetHandler $registerAsset,
         private readonly AssetRepository $assetRepository,
@@ -570,7 +625,7 @@ final class AssetWebApp
 
     private function renderGet(string $path, Request $request): Response
     {
-        if (($path !== '/assets' && $path !== '/locations') || !$request->query->has('id')) {
+        if (($path !== '/assets' && $path !== '/locations' && $path !== '/custody') || !$request->query->has('id')) {
             return $this->render($path);
         }
 
@@ -582,6 +637,10 @@ final class AssetWebApp
 
         if ($path === '/locations') {
             return $this->render($path, locationId: $id);
+        }
+
+        if ($path === '/custody') {
+            return $this->render($path, custodyTransferId: $id);
         }
 
         try {
@@ -609,16 +668,22 @@ final class AssetWebApp
         int $status = Response::HTTP_OK,
         ?AssetId $detailAssetId = null,
         ?string $locationId = null,
+        ?string $custodyTransferId = null,
     ): Response {
         $screen = self::SCREENS[$path];
         $detailAsset = $detailAssetId === null ? null : $this->assetRepository->get($detailAssetId);
         $location = $locationId === null ? null : (self::LOCATIONS[$locationId] ?? null);
+        $custodyTransfer = $custodyTransferId === null ? null : (self::CUSTODY_TRANSFERS[$custodyTransferId] ?? null);
 
         if ($detailAssetId !== null && $detailAsset === null) {
             return new Response('Not Found', Response::HTTP_NOT_FOUND);
         }
 
         if ($locationId !== null && $location === null) {
+            return new Response('Not Found', Response::HTTP_NOT_FOUND);
+        }
+
+        if ($custodyTransferId !== null && $custodyTransfer === null) {
             return new Response('Not Found', Response::HTTP_NOT_FOUND);
         }
 
@@ -642,6 +707,16 @@ final class AssetWebApp
             ];
         }
 
+        if ($custodyTransfer !== null) {
+            $screen = [
+                'label' => 'Custody',
+                'section' => 'People',
+                'title' => $custodyTransfer['number'],
+                'summary' => sprintf('Transfer %s from %s to %s is %s.', $custodyTransfer['number'], $custodyTransfer['from'], $custodyTransfer['to'], strtolower($custodyTransfer['state'])),
+                'items' => [],
+            ];
+        }
+
         $successHtml = $success === null ? '' : sprintf(
             '<p class="notice" role="status">%s</p>',
             $this->escape($success),
@@ -657,6 +732,7 @@ final class AssetWebApp
         $content = match (true) {
             $detailAsset !== null => $this->renderAssetDetailContent($detailAsset),
             $location !== null => $this->renderLocationDetailContent($location),
+            $custodyTransfer !== null => $this->renderCustodyTransferDetailContent($custodyTransfer),
             $path === '/assets/register' => $this->renderRegistrationContent($screen, $successHtml, $errorHtml, $inputDescription),
             default => $this->renderScreenContent($path, $screen),
         };
@@ -1183,6 +1259,73 @@ final class AssetWebApp
     }
 
     /**
+     * @param array{number: string, assets: string, from: string, to: string, state: string, owner: string, due: string, evidence: string} $transfer
+     */
+    private function renderCustodyTransferDetailContent(array $transfer): string
+    {
+        $summary = $this->renderTable(
+            ['Field', 'Value'],
+            [
+                ['Transfer', $transfer['number']],
+                ['Assets', $transfer['assets']],
+                ['From', $transfer['from']],
+                ['To', $transfer['to']],
+                ['State', $transfer['state']],
+                ['Owner', $transfer['owner']],
+                ['Due', $transfer['due']],
+                ['Evidence', $transfer['evidence']],
+            ],
+        );
+        $metrics = $this->renderMetrics([
+            ['label' => 'Assets', 'value' => $transfer['assets'], 'detail' => 'Assets in this handoff'],
+            ['label' => 'State', 'value' => $transfer['state'], 'detail' => 'Current transfer state'],
+            ['label' => 'Owner', 'value' => $transfer['owner'], 'detail' => 'Team accountable'],
+            ['label' => 'Due', 'value' => $transfer['due'], 'detail' => 'Next acceptance checkpoint'],
+        ]);
+        $tabs = $this->renderSideItems([
+            ['label' => 'Summary', 'value' => 'Route and transfer state'],
+            ['label' => 'Assets', 'value' => 'Items in handoff'],
+            ['label' => 'Evidence', 'value' => 'Photos and acknowledgements'],
+            ['label' => 'Comments', 'value' => 'Operational notes'],
+            ['label' => 'Audit', 'value' => 'Transfer events'],
+        ]);
+        $actions = $this->renderActions(['Accept Transfer', 'Reject Transfer', 'Request Return', 'Add Evidence']);
+
+        return <<<HTML
+            {$metrics}
+            <div class="workspace-grid">
+              <div class="workspace">
+                <section class="panel" aria-labelledby="custody-summary-title">
+                  <div class="panel-header">
+                    <h2 id="custody-summary-title">Summary</h2>
+                    <div class="toolbar" aria-label="Custody actions">
+                      {$actions}
+                    </div>
+                  </div>
+                  {$summary}
+                </section>
+                <section class="panel" aria-labelledby="custody-work-title">
+                  <div class="panel-header">
+                    <h2 id="custody-work-title">Transfer Work</h2>
+                  </div>
+                  <ul class="side-list">
+                    <li><span class="side-label">Acceptance</span><span class="side-value">Confirm receiver, timestamp, and asset count.</span></li>
+                    <li><span class="side-label">Evidence</span><span class="side-value">Attach required photos, acknowledgements, and exceptions.</span></li>
+                    <li><span class="side-label">Audit</span><span class="side-value">Preserve custody events for lifecycle history.</span></li>
+                  </ul>
+                </section>
+              </div>
+              <aside class="panel" aria-labelledby="custody-tabs-title">
+                <div class="panel-header">
+                  <h2 id="custody-tabs-title">Transfer Tabs</h2>
+                </div>
+                {$tabs}
+              </aside>
+            </div>
+            HTML;
+    }
+
+    /**
      * @param array{name: string, type: string, occupancy: string, work: string, address: string, access: string, power: string} $location
      */
     private function renderLocationDetailContent(array $location): string
@@ -1424,6 +1567,10 @@ final class AssetWebApp
             return $this->locationIndexWorkspace($workspace);
         }
 
+        if ($path === '/custody') {
+            return $this->custodyIndexWorkspace($workspace);
+        }
+
         $assets = $this->assetRepository->all();
 
         if ($assets === []) {
@@ -1526,6 +1673,44 @@ final class AssetWebApp
                 $location['type'],
                 $location['occupancy'],
                 $location['work'],
+            ];
+        }
+
+        return $workspace;
+    }
+
+    /**
+     * @param array{
+     *     actions: list<string>,
+     *     metrics: list<array{label: string, value: string, detail: string}>,
+     *     tableTitle: string,
+     *     columns: list<string>,
+     *     rows: list<list<string>>,
+     *     sideTitle: string,
+     *     sideItems: list<array{label: string, value: string}>
+     * } $workspace
+     *
+     * @return array{
+     *     actions: list<string>,
+     *     metrics: list<array{label: string, value: string, detail: string}>,
+     *     tableTitle: string,
+     *     columns: list<string>,
+     *     rows: list<list<string>>,
+     *     sideTitle: string,
+     *     sideItems: list<array{label: string, value: string}>
+     * }
+     */
+    private function custodyIndexWorkspace(array $workspace): array
+    {
+        $workspace['rows'] = [];
+
+        foreach (self::CUSTODY_TRANSFERS as $id => $transfer) {
+            $workspace['rows'][] = [
+                $this->internalLinkCell('/custody?id=' . $id, $transfer['number']),
+                $transfer['assets'],
+                $transfer['from'],
+                $transfer['to'],
+                $transfer['state'],
             ];
         }
 
