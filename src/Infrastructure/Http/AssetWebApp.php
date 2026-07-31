@@ -539,6 +539,61 @@ final class AssetWebApp
         ],
     ];
 
+    /**
+     * @var array<string, array{
+     *     signal: string,
+     *     asset: string,
+     *     host: string,
+     *     action: string,
+     *     severity: string,
+     *     source: string,
+     *     owner: string,
+     *     next: string
+     * }>
+     */
+    private const array MONITORING_EXCEPTIONS = [
+        'hostname-mismatch-core-atl-01' => [
+            'signal' => 'Hostname mismatch',
+            'asset' => 'IR-10042',
+            'host' => 'core-atl-01',
+            'action' => 'Review alias',
+            'severity' => 'Medium',
+            'source' => 'Cacti host inventory',
+            'owner' => 'NetOps',
+            'next' => 'Confirm hostname and asset alias',
+        ],
+        'no-asset-record-old-cpe-rno-77' => [
+            'signal' => 'No asset record',
+            'asset' => 'Unknown',
+            'host' => 'old-cpe-rno-77',
+            'action' => 'Create or retire',
+            'severity' => 'High',
+            'source' => 'Polling state',
+            'owner' => 'Field Ops',
+            'next' => 'Create asset record or disable retired host',
+        ],
+        'missing-graphs-agg-den-03' => [
+            'signal' => 'Missing graphs',
+            'asset' => 'IR-10077',
+            'host' => 'agg-den-03',
+            'action' => 'Add graph template',
+            'severity' => 'Medium',
+            'source' => 'Graph tree scan',
+            'owner' => 'Regional Ops',
+            'next' => 'Attach interface graph template',
+        ],
+        'retired-still-polling-retired-edge-02' => [
+            'signal' => 'Retired still polling',
+            'asset' => 'IR-09011',
+            'host' => 'retired-edge-02',
+            'action' => 'Disable host',
+            'severity' => 'High',
+            'source' => 'Lifecycle reconciliation',
+            'owner' => 'NetOps',
+            'next' => 'Disable polling after final validation',
+        ],
+    ];
+
     public function __construct(
         private readonly RegisterAssetHandler $registerAsset,
         private readonly AssetRepository $assetRepository,
@@ -625,7 +680,15 @@ final class AssetWebApp
 
     private function renderGet(string $path, Request $request): Response
     {
-        if (($path !== '/assets' && $path !== '/locations' && $path !== '/custody') || !$request->query->has('id')) {
+        if (
+            (
+                $path !== '/assets'
+                && $path !== '/locations'
+                && $path !== '/custody'
+                && $path !== '/monitoring'
+            )
+            || !$request->query->has('id')
+        ) {
             return $this->render($path);
         }
 
@@ -641,6 +704,10 @@ final class AssetWebApp
 
         if ($path === '/custody') {
             return $this->render($path, custodyTransferId: $id);
+        }
+
+        if ($path === '/monitoring') {
+            return $this->render($path, monitoringExceptionId: $id);
         }
 
         try {
@@ -669,11 +736,13 @@ final class AssetWebApp
         ?AssetId $detailAssetId = null,
         ?string $locationId = null,
         ?string $custodyTransferId = null,
+        ?string $monitoringExceptionId = null,
     ): Response {
         $screen = self::SCREENS[$path];
         $detailAsset = $detailAssetId === null ? null : $this->assetRepository->get($detailAssetId);
         $location = $locationId === null ? null : (self::LOCATIONS[$locationId] ?? null);
         $custodyTransfer = $custodyTransferId === null ? null : (self::CUSTODY_TRANSFERS[$custodyTransferId] ?? null);
+        $monitoringException = $monitoringExceptionId === null ? null : (self::MONITORING_EXCEPTIONS[$monitoringExceptionId] ?? null);
 
         if ($detailAssetId !== null && $detailAsset === null) {
             return new Response('Not Found', Response::HTTP_NOT_FOUND);
@@ -684,6 +753,10 @@ final class AssetWebApp
         }
 
         if ($custodyTransferId !== null && $custodyTransfer === null) {
+            return new Response('Not Found', Response::HTTP_NOT_FOUND);
+        }
+
+        if ($monitoringExceptionId !== null && $monitoringException === null) {
             return new Response('Not Found', Response::HTTP_NOT_FOUND);
         }
 
@@ -717,6 +790,16 @@ final class AssetWebApp
             ];
         }
 
+        if ($monitoringException !== null) {
+            $screen = [
+                'label' => 'Monitoring',
+                'section' => 'Cacti',
+                'title' => $monitoringException['signal'],
+                'summary' => sprintf('%s on Cacti host %s for asset %s.', $monitoringException['signal'], $monitoringException['host'], $monitoringException['asset']),
+                'items' => [],
+            ];
+        }
+
         $successHtml = $success === null ? '' : sprintf(
             '<p class="notice" role="status">%s</p>',
             $this->escape($success),
@@ -733,6 +816,7 @@ final class AssetWebApp
             $detailAsset !== null => $this->renderAssetDetailContent($detailAsset),
             $location !== null => $this->renderLocationDetailContent($location),
             $custodyTransfer !== null => $this->renderCustodyTransferDetailContent($custodyTransfer),
+            $monitoringException !== null => $this->renderMonitoringExceptionDetailContent($monitoringException),
             $path === '/assets/register' => $this->renderRegistrationContent($screen, $successHtml, $errorHtml, $inputDescription),
             default => $this->renderScreenContent($path, $screen),
         };
@@ -1259,6 +1343,73 @@ final class AssetWebApp
     }
 
     /**
+     * @param array{signal: string, asset: string, host: string, action: string, severity: string, source: string, owner: string, next: string} $exception
+     */
+    private function renderMonitoringExceptionDetailContent(array $exception): string
+    {
+        $summary = $this->renderTable(
+            ['Field', 'Value'],
+            [
+                ['Signal', $exception['signal']],
+                ['Severity', $exception['severity']],
+                ['Asset', $exception['asset']],
+                ['Cacti Host', $exception['host']],
+                ['Source', $exception['source']],
+                ['Owner', $exception['owner']],
+                ['Action', $exception['action']],
+                ['Next Step', $exception['next']],
+            ],
+        );
+        $metrics = $this->renderMetrics([
+            ['label' => 'Severity', 'value' => $exception['severity'], 'detail' => 'Triage priority'],
+            ['label' => 'Asset', 'value' => $exception['asset'], 'detail' => 'InfraRegister reference'],
+            ['label' => 'Cacti host', 'value' => $exception['host'], 'detail' => 'Polling source'],
+            ['label' => 'Owner', 'value' => $exception['owner'], 'detail' => 'Team accountable'],
+        ]);
+        $tabs = $this->renderSideItems([
+            ['label' => 'Summary', 'value' => 'Signal and ownership'],
+            ['label' => 'Cacti Host', 'value' => 'Polling and graph context'],
+            ['label' => 'Asset Link', 'value' => 'Identity reconciliation'],
+            ['label' => 'History', 'value' => 'Prior reconcile runs'],
+            ['label' => 'Audit', 'value' => 'Resolution evidence'],
+        ]);
+        $actions = $this->renderActions(['Link Host', 'Suppress Exception', 'Create Asset', 'Resolve Signal']);
+
+        return <<<HTML
+            {$metrics}
+            <div class="workspace-grid">
+              <div class="workspace">
+                <section class="panel" aria-labelledby="monitoring-summary-title">
+                  <div class="panel-header">
+                    <h2 id="monitoring-summary-title">Summary</h2>
+                    <div class="toolbar" aria-label="Monitoring actions">
+                      {$actions}
+                    </div>
+                  </div>
+                  {$summary}
+                </section>
+                <section class="panel" aria-labelledby="monitoring-work-title">
+                  <div class="panel-header">
+                    <h2 id="monitoring-work-title">Reconcile Work</h2>
+                  </div>
+                  <ul class="side-list">
+                    <li><span class="side-label">Validate</span><span class="side-value">Confirm the Cacti host, asset identity, and polling state.</span></li>
+                    <li><span class="side-label">Resolve</span><span class="side-value">Link the host, create the missing asset, or suppress the known exception.</span></li>
+                    <li><span class="side-label">Evidence</span><span class="side-value">Keep the reconcile result available for audit history.</span></li>
+                  </ul>
+                </section>
+              </div>
+              <aside class="panel" aria-labelledby="monitoring-tabs-title">
+                <div class="panel-header">
+                  <h2 id="monitoring-tabs-title">Exception Tabs</h2>
+                </div>
+                {$tabs}
+              </aside>
+            </div>
+            HTML;
+    }
+
+    /**
      * @param array{number: string, assets: string, from: string, to: string, state: string, owner: string, due: string, evidence: string} $transfer
      */
     private function renderCustodyTransferDetailContent(array $transfer): string
@@ -1571,6 +1722,10 @@ final class AssetWebApp
             return $this->custodyIndexWorkspace($workspace);
         }
 
+        if ($path === '/monitoring') {
+            return $this->monitoringIndexWorkspace($workspace);
+        }
+
         $assets = $this->assetRepository->all();
 
         if ($assets === []) {
@@ -1711,6 +1866,43 @@ final class AssetWebApp
                 $transfer['from'],
                 $transfer['to'],
                 $transfer['state'],
+            ];
+        }
+
+        return $workspace;
+    }
+
+    /**
+     * @param array{
+     *     actions: list<string>,
+     *     metrics: list<array{label: string, value: string, detail: string}>,
+     *     tableTitle: string,
+     *     columns: list<string>,
+     *     rows: list<list<string>>,
+     *     sideTitle: string,
+     *     sideItems: list<array{label: string, value: string}>
+     * } $workspace
+     *
+     * @return array{
+     *     actions: list<string>,
+     *     metrics: list<array{label: string, value: string, detail: string}>,
+     *     tableTitle: string,
+     *     columns: list<string>,
+     *     rows: list<list<string>>,
+     *     sideTitle: string,
+     *     sideItems: list<array{label: string, value: string}>
+     * }
+     */
+    private function monitoringIndexWorkspace(array $workspace): array
+    {
+        $workspace['rows'] = [];
+
+        foreach (self::MONITORING_EXCEPTIONS as $id => $exception) {
+            $workspace['rows'][] = [
+                $this->internalLinkCell('/monitoring?id=' . $id, $exception['signal']),
+                $exception['asset'],
+                $exception['host'],
+                $exception['action'],
             ];
         }
 

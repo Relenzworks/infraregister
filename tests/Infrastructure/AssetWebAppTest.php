@@ -264,6 +264,37 @@ final class AssetWebAppTest extends TestCase
         self::assertSame('Not Found', $response->getContent());
     }
 
+    public function testItLinksMonitoringRowsToExceptionDetail(): void
+    {
+        $response = $this->app('monitoring-index-links')->handle(Request::create('/monitoring'));
+        $content = (string) $response->getContent();
+
+        self::assertSame(200, $response->getStatusCode());
+        self::assertStringContainsString('<a href="/monitoring?id=hostname-mismatch-core-atl-01">Hostname mismatch</a>', $content);
+        self::assertStringContainsString('<a href="/monitoring?id=retired-still-polling-retired-edge-02">Retired still polling</a>', $content);
+    }
+
+    public function testItRendersMonitoringExceptionDetailFromTheMonitoringRoute(): void
+    {
+        $response = $this->app('monitoring-detail')->handle(Request::create('/monitoring', 'GET', ['id' => 'hostname-mismatch-core-atl-01']));
+        $content = (string) $response->getContent();
+
+        self::assertSame(200, $response->getStatusCode());
+        self::assertStringContainsString('<h1>Hostname mismatch</h1>', $content);
+        self::assertStringContainsString('Exception Tabs', $content);
+        self::assertStringContainsString('Link Host', $content);
+        self::assertStringContainsString('Confirm hostname and asset alias', $content);
+        self::assertStringContainsString('href="/monitoring" aria-current="page"', $content);
+    }
+
+    public function testItReturnsNotFoundForUnknownMonitoringExceptionIds(): void
+    {
+        $response = $this->app('unknown-monitoring-exception')->handle(Request::create('/monitoring', 'GET', ['id' => 'unknown-exception']));
+
+        self::assertSame(404, $response->getStatusCode());
+        self::assertSame('Not Found', $response->getContent());
+    }
+
     public function testItRendersNonDefaultAssetStatusesOnTheAssetIndex(): void
     {
         $path = $this->storePath('asset-index-statuses');
