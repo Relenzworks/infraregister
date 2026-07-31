@@ -12,4 +12,9 @@ interface AssetRepository
     public function save(Asset $asset): void;
 
     public function get(AssetId $id): ?Asset;
+
+    /**
+     * @return list<Asset>
+     */
+    public function all(): array;
 }

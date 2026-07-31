@@ -41,4 +41,12 @@ final class RecordingAssetRepository implements AssetRepository
     {
         return $this->assets[$id->value] ?? null;
     }
+
+    /**
+     * @return list<Asset>
+     */
+    public function all(): array
+    {
+        return array_values($this->assets);
+    }
 }
