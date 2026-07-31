@@ -1,5 +1,6 @@
 /vendor/
 /build/
+/var/
 /.phpunit.cache/
 /.php-cs-fixer.cache
 /coverage/
