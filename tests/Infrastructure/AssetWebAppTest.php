@@ -233,6 +233,37 @@ final class AssetWebAppTest extends TestCase
         self::assertSame('Not Found', $response->getContent());
     }
 
+    public function testItLinksCustodyRowsToTransferDetail(): void
+    {
+        $response = $this->app('custody-index-links')->handle(Request::create('/custody'));
+        $content = (string) $response->getContent();
+
+        self::assertSame(200, $response->getStatusCode());
+        self::assertStringContainsString('<a href="/custody?id=tr-1044">TR-1044</a>', $content);
+        self::assertStringContainsString('<a href="/custody?id=tr-1047">TR-1047</a>', $content);
+    }
+
+    public function testItRendersCustodyTransferDetailFromTheCustodyQueueRoute(): void
+    {
+        $response = $this->app('custody-detail')->handle(Request::create('/custody', 'GET', ['id' => 'tr-1044']));
+        $content = (string) $response->getContent();
+
+        self::assertSame(200, $response->getStatusCode());
+        self::assertStringContainsString('<h1>TR-1044</h1>', $content);
+        self::assertStringContainsString('Transfer Tabs', $content);
+        self::assertStringContainsString('Accept Transfer', $content);
+        self::assertStringContainsString('Receiver acknowledgement required', $content);
+        self::assertStringContainsString('href="/custody" aria-current="page"', $content);
+    }
+
+    public function testItReturnsNotFoundForUnknownCustodyTransferIds(): void
+    {
+        $response = $this->app('unknown-custody-transfer')->handle(Request::create('/custody', 'GET', ['id' => 'tr-9999']));
+
+        self::assertSame(404, $response->getStatusCode());
+        self::assertSame('Not Found', $response->getContent());
+    }
+
     public function testItRendersNonDefaultAssetStatusesOnTheAssetIndex(): void
     {
         $path = $this->storePath('asset-index-statuses');
