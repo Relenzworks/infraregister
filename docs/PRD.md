@@ -30,6 +30,7 @@ InfraRegister manages infrastructure asset records, custody, assignment, and lif
 - Provide a CLI command for asset registration.
 - Provide JSON persistence for local and test use.
 - Provide unit, integration, end-to-end, coverage, and platform tests.
+- Define the application screen map and navigation model before expanding the UI surface.
 
 ## Deferred Scope
 
