@@ -23,6 +23,7 @@ for platform in "${platforms[@]}"; do
     -v "${repo_root}:/app" \
     -v "infraregister-composer-cache-${platform}:/tmp/composer-cache" \
     -e COMPOSER_CACHE_DIR=/tmp/composer-cache \
+    -e COMPOSER_ROOT_VERSION="${COMPOSER_ROOT_VERSION:-0.1.x-dev}" \
     -w /app \
     "${image}" \
     sh -lc 'composer install --no-interaction --no-progress && composer quality'
