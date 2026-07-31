@@ -727,6 +727,71 @@ final class AssetWebApp
         ],
     ];
 
+    /**
+     * @var array<string, array{
+     *     number: string,
+     *     vendor: string,
+     *     coverage: string,
+     *     owner: string,
+     *     due: string,
+     *     value: string,
+     *     term: string,
+     *     state: string,
+     *     gap: string,
+     *     next: string
+     * }>
+     */
+    private const array CONTRACT_RENEWALS = [
+        'sup-3092' => [
+            'number' => 'SUP-3092',
+            'vendor' => 'Juniper',
+            'coverage' => 'Core routers',
+            'owner' => 'NetOps',
+            'due' => '18 days',
+            'value' => '$482K',
+            'term' => 'Annual support',
+            'state' => 'Quote review',
+            'gap' => '4 routers uncovered',
+            'next' => 'Confirm covered serials before renewal approval',
+        ],
+        'sup-3110' => [
+            'number' => 'SUP-3110',
+            'vendor' => 'APC',
+            'coverage' => 'UPS fleet',
+            'owner' => 'Facilities',
+            'due' => '31 days',
+            'value' => '$91K',
+            'term' => '36 month support',
+            'state' => 'Owner review',
+            'gap' => '9 UPS devices uncovered',
+            'next' => 'Validate support level for remote sites',
+        ],
+        'lic-2018' => [
+            'number' => 'LIC-2018',
+            'vendor' => 'IPAM',
+            'coverage' => 'Address registry',
+            'owner' => 'Platform',
+            'due' => '44 days',
+            'value' => '$64K',
+            'term' => 'Subscription',
+            'state' => 'Budget hold',
+            'gap' => 'No asset gap',
+            'next' => 'Attach purchase approval',
+        ],
+        'lease-884' => [
+            'number' => 'LEASE-884',
+            'vendor' => 'Dell',
+            'coverage' => 'Edge compute',
+            'owner' => 'Finance',
+            'due' => '58 days',
+            'value' => '$212K',
+            'term' => 'Lease renewal',
+            'state' => 'Return planning',
+            'gap' => '5 server nodes uncovered',
+            'next' => 'Decide renew, buyout, or return',
+        ],
+    ];
+
     public function __construct(
         private readonly RegisterAssetHandler $registerAsset,
         private readonly AssetRepository $assetRepository,
@@ -821,6 +886,7 @@ final class AssetWebApp
                 && $path !== '/monitoring'
                 && $path !== '/imports'
                 && $path !== '/procurement'
+                && $path !== '/contracts'
             )
             || !$request->query->has('id')
         ) {
@@ -853,6 +919,10 @@ final class AssetWebApp
             return $this->render($path, receivingBatchId: $id);
         }
 
+        if ($path === '/contracts') {
+            return $this->render($path, contractRenewalId: $id);
+        }
+
         try {
             return $this->render($path, detailAssetId: AssetId::fromString($id));
         } catch (InvalidArgumentException) {
@@ -882,6 +952,7 @@ final class AssetWebApp
         ?string $monitoringExceptionId = null,
         ?string $importBatchId = null,
         ?string $receivingBatchId = null,
+        ?string $contractRenewalId = null,
     ): Response {
         $screen = self::SCREENS[$path];
         $detailAsset = $detailAssetId === null ? null : $this->assetRepository->get($detailAssetId);
@@ -890,6 +961,7 @@ final class AssetWebApp
         $monitoringException = $monitoringExceptionId === null ? null : (self::MONITORING_EXCEPTIONS[$monitoringExceptionId] ?? null);
         $importBatch = $importBatchId === null ? null : (self::IMPORT_BATCHES[$importBatchId] ?? null);
         $receivingBatch = $receivingBatchId === null ? null : (self::RECEIVING_BATCHES[$receivingBatchId] ?? null);
+        $contractRenewal = $contractRenewalId === null ? null : (self::CONTRACT_RENEWALS[$contractRenewalId] ?? null);
 
         if ($detailAssetId !== null && $detailAsset === null) {
             return new Response('Not Found', Response::HTTP_NOT_FOUND);
@@ -912,6 +984,10 @@ final class AssetWebApp
         }
 
         if ($receivingBatchId !== null && $receivingBatch === null) {
+            return new Response('Not Found', Response::HTTP_NOT_FOUND);
+        }
+
+        if ($contractRenewalId !== null && $contractRenewal === null) {
             return new Response('Not Found', Response::HTTP_NOT_FOUND);
         }
 
@@ -975,6 +1051,16 @@ final class AssetWebApp
             ];
         }
 
+        if ($contractRenewal !== null) {
+            $screen = [
+                'label' => 'Contracts',
+                'section' => 'Commercial',
+                'title' => $contractRenewal['number'],
+                'summary' => sprintf('%s renewal with %s covers %s and is due in %s.', $contractRenewal['number'], $contractRenewal['vendor'], $contractRenewal['coverage'], $contractRenewal['due']),
+                'items' => [],
+            ];
+        }
+
         $successHtml = $success === null ? '' : sprintf(
             '<p class="notice" role="status">%s</p>',
             $this->escape($success),
@@ -994,6 +1080,7 @@ final class AssetWebApp
             $monitoringException !== null => $this->renderMonitoringExceptionDetailContent($monitoringException),
             $importBatch !== null => $this->renderImportBatchDetailContent($importBatch),
             $receivingBatch !== null => $this->renderReceivingBatchDetailContent($receivingBatch),
+            $contractRenewal !== null => $this->renderContractRenewalDetailContent($contractRenewal),
             $path === '/assets/register' => $this->renderRegistrationContent($screen, $successHtml, $errorHtml, $inputDescription),
             default => $this->renderScreenContent($path, $screen),
         };
@@ -1517,6 +1604,75 @@ final class AssetWebApp
             </body>
             </html>
             HTML, $status);
+    }
+
+    /**
+     * @param array{number: string, vendor: string, coverage: string, owner: string, due: string, value: string, term: string, state: string, gap: string, next: string} $contract
+     */
+    private function renderContractRenewalDetailContent(array $contract): string
+    {
+        $summary = $this->renderTable(
+            ['Field', 'Value'],
+            [
+                ['Contract', $contract['number']],
+                ['Vendor', $contract['vendor']],
+                ['Coverage', $contract['coverage']],
+                ['Owner', $contract['owner']],
+                ['Due', $contract['due']],
+                ['Value', $contract['value']],
+                ['Term', $contract['term']],
+                ['State', $contract['state']],
+                ['Coverage Gap', $contract['gap']],
+                ['Next Step', $contract['next']],
+            ],
+        );
+        $metrics = $this->renderMetrics([
+            ['label' => 'Due', 'value' => $contract['due'], 'detail' => 'Renewal window'],
+            ['label' => 'Value', 'value' => $contract['value'], 'detail' => 'Commercial exposure'],
+            ['label' => 'State', 'value' => $contract['state'], 'detail' => 'Renewal status'],
+            ['label' => 'Owner', 'value' => $contract['owner'], 'detail' => 'Accountable team'],
+        ]);
+        $tabs = $this->renderSideItems([
+            ['label' => 'Summary', 'value' => 'Commercial state and ownership'],
+            ['label' => 'Coverage', 'value' => 'Covered and uncovered assets'],
+            ['label' => 'Documents', 'value' => 'Quotes, invoices, and terms'],
+            ['label' => 'Approvals', 'value' => 'Budget and renewal decisions'],
+            ['label' => 'Audit', 'value' => 'Renewal evidence history'],
+        ]);
+        $actions = $this->renderActions(['Review Renewal', 'Attach Document', 'Map Coverage', 'Request Approval']);
+
+        return <<<HTML
+            {$metrics}
+            <div class="workspace-grid">
+              <div class="workspace">
+                <section class="panel" aria-labelledby="contract-summary-title">
+                  <div class="panel-header">
+                    <h2 id="contract-summary-title">Summary</h2>
+                    <div class="toolbar" aria-label="Contract actions">
+                      {$actions}
+                    </div>
+                  </div>
+                  {$summary}
+                </section>
+                <section class="panel" aria-labelledby="contract-work-title">
+                  <div class="panel-header">
+                    <h2 id="contract-work-title">Renewal Work</h2>
+                  </div>
+                  <ul class="side-list">
+                    <li><span class="side-label">Coverage</span><span class="side-value">Reconcile covered serials, service levels, and uncovered critical assets.</span></li>
+                    <li><span class="side-label">Commercial</span><span class="side-value">Track quote, term, value, lease option, and budget approval state.</span></li>
+                    <li><span class="side-label">Evidence</span><span class="side-value">Attach documents and preserve renewal decisions with the contract.</span></li>
+                  </ul>
+                </section>
+              </div>
+              <aside class="panel" aria-labelledby="contract-tabs-title">
+                <div class="panel-header">
+                  <h2 id="contract-tabs-title">Contract Tabs</h2>
+                </div>
+                {$tabs}
+              </aside>
+            </div>
+            HTML;
     }
 
     /**
@@ -2045,6 +2201,10 @@ final class AssetWebApp
             return $this->procurementIndexWorkspace($workspace);
         }
 
+        if ($path === '/contracts') {
+            return $this->contractIndexWorkspace($workspace);
+        }
+
         $assets = $this->assetRepository->all();
 
         if ($assets === []) {
@@ -2297,6 +2457,44 @@ final class AssetWebApp
                 $batch['vendor'],
                 $batch['expected'],
                 $batch['exception'],
+            ];
+        }
+
+        return $workspace;
+    }
+
+    /**
+     * @param array{
+     *     actions: list<string>,
+     *     metrics: list<array{label: string, value: string, detail: string}>,
+     *     tableTitle: string,
+     *     columns: list<string>,
+     *     rows: list<list<string>>,
+     *     sideTitle: string,
+     *     sideItems: list<array{label: string, value: string}>
+     * } $workspace
+     *
+     * @return array{
+     *     actions: list<string>,
+     *     metrics: list<array{label: string, value: string, detail: string}>,
+     *     tableTitle: string,
+     *     columns: list<string>,
+     *     rows: list<list<string>>,
+     *     sideTitle: string,
+     *     sideItems: list<array{label: string, value: string}>
+     * }
+     */
+    private function contractIndexWorkspace(array $workspace): array
+    {
+        $workspace['rows'] = [];
+
+        foreach (self::CONTRACT_RENEWALS as $id => $contract) {
+            $workspace['rows'][] = [
+                $this->internalLinkCell('/contracts?id=' . $id, $contract['number']),
+                $contract['vendor'],
+                $contract['coverage'],
+                $contract['owner'],
+                $contract['due'],
             ];
         }
 
