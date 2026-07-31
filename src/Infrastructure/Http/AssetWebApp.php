@@ -1487,6 +1487,14 @@ final class AssetWebApp
                 $this->escape($screen['label']),
             )
             : '';
+        $browserTitleParts = [$screen['title']];
+
+        if ($isDetailScreen) {
+            $browserTitleParts[] = $screen['label'];
+        }
+
+        $browserTitleParts[] = 'InfraRegister';
+        $browserTitle = implode(' - ', $browserTitleParts);
         $content = match (true) {
             $detailAsset !== null => $this->renderAssetDetailContent($detailAsset),
             $location !== null => $this->renderLocationDetailContent($location),
@@ -1510,7 +1518,7 @@ final class AssetWebApp
             <head>
               <meta charset="utf-8">
               <meta name="viewport" content="width=device-width, initial-scale=1">
-              <title>{$this->escape($screen['title'])} - InfraRegister</title>
+              <title>{$this->escape($browserTitle)}</title>
               <style>
                 :root {
                   color-scheme: light;
