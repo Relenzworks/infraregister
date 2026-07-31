@@ -912,6 +912,61 @@ final class AssetWebApp
         ],
     ];
 
+    /**
+     * @var array<string, array{
+     *     area: string,
+     *     setting: string,
+     *     state: string,
+     *     owner: string,
+     *     scope: string,
+     *     risk: string,
+     *     evidence: string,
+     *     next: string
+     * }>
+     */
+    private const array ADMIN_CONFIGURATIONS = [
+        'rbac-ldap-group-role-map' => [
+            'area' => 'RBAC',
+            'setting' => 'LDAP group role map',
+            'state' => 'Configured',
+            'owner' => 'Platform',
+            'scope' => 'Viewer, operator, manager, and admin groups',
+            'risk' => 'Privileged group drift',
+            'evidence' => 'LDAP bind and local fallback tests',
+            'next' => 'Review privileged mappings before production enablement',
+        ],
+        'lifecycle-retirement-approvals' => [
+            'area' => 'Lifecycle',
+            'setting' => 'Retirement approvals',
+            'state' => 'Draft',
+            'owner' => 'Operations',
+            'scope' => 'Retirement, disposal, data wipe, and audit evidence',
+            'risk' => 'Assets retired without required approval',
+            'evidence' => 'Draft approval matrix',
+            'next' => 'Approve retirement workflow owners',
+        ],
+        'fields-optic-serial-required' => [
+            'area' => 'Fields',
+            'setting' => 'Optic serial required',
+            'state' => 'Enabled',
+            'owner' => 'NetOps',
+            'scope' => 'Optics, transceivers, and pluggable modules',
+            'risk' => 'Duplicate or missing serial identity',
+            'evidence' => 'Required field policy',
+            'next' => 'Audit existing optic records',
+        ],
+        'integrations-cacti-host-sync' => [
+            'area' => 'Integrations',
+            'setting' => 'Cacti host sync',
+            'state' => 'Planned',
+            'owner' => 'Plugin',
+            'scope' => 'Cacti hosts, graph trees, polling state, and asset links',
+            'risk' => 'Monitoring state drift',
+            'evidence' => 'Integration design checklist',
+            'next' => 'Validate plugin sync contract',
+        ],
+    ];
+
     public function __construct(
         private readonly RegisterAssetHandler $registerAsset,
         private readonly AssetRepository $assetRepository,
@@ -1009,6 +1064,7 @@ final class AssetWebApp
                 && $path !== '/contracts'
                 && $path !== '/reports'
                 && $path !== '/maintenance'
+                && $path !== '/admin'
             )
             || !$request->query->has('id')
         ) {
@@ -1053,6 +1109,10 @@ final class AssetWebApp
             return $this->render($path, maintenanceWorkId: $id);
         }
 
+        if ($path === '/admin') {
+            return $this->render($path, adminConfigurationId: $id);
+        }
+
         try {
             return $this->render($path, detailAssetId: AssetId::fromString($id));
         } catch (InvalidArgumentException) {
@@ -1085,6 +1145,7 @@ final class AssetWebApp
         ?string $contractRenewalId = null,
         ?string $savedReportId = null,
         ?string $maintenanceWorkId = null,
+        ?string $adminConfigurationId = null,
     ): Response {
         $screen = self::SCREENS[$path];
         $detailAsset = $detailAssetId === null ? null : $this->assetRepository->get($detailAssetId);
@@ -1096,6 +1157,7 @@ final class AssetWebApp
         $contractRenewal = $contractRenewalId === null ? null : (self::CONTRACT_RENEWALS[$contractRenewalId] ?? null);
         $savedReport = $savedReportId === null ? null : (self::SAVED_REPORTS[$savedReportId] ?? null);
         $maintenanceWork = $maintenanceWorkId === null ? null : (self::MAINTENANCE_WORK[$maintenanceWorkId] ?? null);
+        $adminConfiguration = $adminConfigurationId === null ? null : (self::ADMIN_CONFIGURATIONS[$adminConfigurationId] ?? null);
 
         if ($detailAssetId !== null && $detailAsset === null) {
             return new Response('Not Found', Response::HTTP_NOT_FOUND);
@@ -1130,6 +1192,10 @@ final class AssetWebApp
         }
 
         if ($maintenanceWorkId !== null && $maintenanceWork === null) {
+            return new Response('Not Found', Response::HTTP_NOT_FOUND);
+        }
+
+        if ($adminConfigurationId !== null && $adminConfiguration === null) {
             return new Response('Not Found', Response::HTTP_NOT_FOUND);
         }
 
@@ -1223,6 +1289,16 @@ final class AssetWebApp
             ];
         }
 
+        if ($adminConfiguration !== null) {
+            $screen = [
+                'label' => 'Admin',
+                'section' => 'Configuration',
+                'title' => $adminConfiguration['setting'],
+                'summary' => sprintf('%s configuration is %s and owned by %s.', $adminConfiguration['area'], strtolower($adminConfiguration['state']), $adminConfiguration['owner']),
+                'items' => [],
+            ];
+        }
+
         $successHtml = $success === null ? '' : sprintf(
             '<p class="notice" role="status">%s</p>',
             $this->escape($success),
@@ -1245,6 +1321,7 @@ final class AssetWebApp
             $contractRenewal !== null => $this->renderContractRenewalDetailContent($contractRenewal),
             $savedReport !== null => $this->renderSavedReportDetailContent($savedReport),
             $maintenanceWork !== null => $this->renderMaintenanceWorkDetailContent($maintenanceWork),
+            $adminConfiguration !== null => $this->renderAdminConfigurationDetailContent($adminConfiguration),
             $path === '/assets/register' => $this->renderRegistrationContent($screen, $successHtml, $errorHtml, $inputDescription),
             default => $this->renderScreenContent($path, $screen),
         };
@@ -1768,6 +1845,73 @@ final class AssetWebApp
             </body>
             </html>
             HTML, $status);
+    }
+
+    /**
+     * @param array{area: string, setting: string, state: string, owner: string, scope: string, risk: string, evidence: string, next: string} $configuration
+     */
+    private function renderAdminConfigurationDetailContent(array $configuration): string
+    {
+        $summary = $this->renderTable(
+            ['Field', 'Value'],
+            [
+                ['Area', $configuration['area']],
+                ['Setting', $configuration['setting']],
+                ['State', $configuration['state']],
+                ['Owner', $configuration['owner']],
+                ['Scope', $configuration['scope']],
+                ['Risk', $configuration['risk']],
+                ['Evidence', $configuration['evidence']],
+                ['Next Step', $configuration['next']],
+            ],
+        );
+        $metrics = $this->renderMetrics([
+            ['label' => 'Area', 'value' => $configuration['area'], 'detail' => 'Configuration area'],
+            ['label' => 'State', 'value' => $configuration['state'], 'detail' => 'Readiness'],
+            ['label' => 'Owner', 'value' => $configuration['owner'], 'detail' => 'Accountable team'],
+            ['label' => 'Risk', 'value' => $configuration['risk'], 'detail' => 'Review focus'],
+        ]);
+        $tabs = $this->renderSideItems([
+            ['label' => 'Summary', 'value' => 'Setting scope and readiness'],
+            ['label' => 'Policy', 'value' => 'Controls, defaults, and exceptions'],
+            ['label' => 'Access', 'value' => 'RBAC and LDAP impact'],
+            ['label' => 'Evidence', 'value' => 'Validation and audit records'],
+            ['label' => 'History', 'value' => 'Configuration change timeline'],
+        ]);
+        $actions = $this->renderActions(['Review Setting', 'Validate Policy', 'Attach Evidence', 'Open Change']);
+
+        return <<<HTML
+            {$metrics}
+            <div class="workspace-grid">
+              <div class="workspace">
+                <section class="panel" aria-labelledby="admin-summary-title">
+                  <div class="panel-header">
+                    <h2 id="admin-summary-title">Summary</h2>
+                    <div class="toolbar" aria-label="Configuration actions">
+                      {$actions}
+                    </div>
+                  </div>
+                  {$summary}
+                </section>
+                <section class="panel" aria-labelledby="admin-work-title">
+                  <div class="panel-header">
+                    <h2 id="admin-work-title">Configuration Work</h2>
+                  </div>
+                  <ul class="side-list">
+                    <li><span class="side-label">Control</span><span class="side-value">Keep policy, permissions, and required fields explicit before enabling writes.</span></li>
+                    <li><span class="side-label">Validation</span><span class="side-value">Record tests, review evidence, and drift checks for production configuration.</span></li>
+                    <li><span class="side-label">Change</span><span class="side-value">Track owners, risk, approval, and rollback notes for each setting.</span></li>
+                  </ul>
+                </section>
+              </div>
+              <aside class="panel" aria-labelledby="admin-tabs-title">
+                <div class="panel-header">
+                  <h2 id="admin-tabs-title">Configuration Tabs</h2>
+                </div>
+                {$tabs}
+              </aside>
+            </div>
+            HTML;
     }
 
     /**
@@ -2513,6 +2657,10 @@ final class AssetWebApp
             return $this->maintenanceIndexWorkspace($workspace);
         }
 
+        if ($path === '/admin') {
+            return $this->adminIndexWorkspace($workspace);
+        }
+
         $assets = $this->assetRepository->all();
 
         if ($assets === []) {
@@ -2878,6 +3026,43 @@ final class AssetWebApp
                 $work['window'],
                 $work['owner'],
                 $work['state'],
+            ];
+        }
+
+        return $workspace;
+    }
+
+    /**
+     * @param array{
+     *     actions: list<string>,
+     *     metrics: list<array{label: string, value: string, detail: string}>,
+     *     tableTitle: string,
+     *     columns: list<string>,
+     *     rows: list<list<string>>,
+     *     sideTitle: string,
+     *     sideItems: list<array{label: string, value: string}>
+     * } $workspace
+     *
+     * @return array{
+     *     actions: list<string>,
+     *     metrics: list<array{label: string, value: string, detail: string}>,
+     *     tableTitle: string,
+     *     columns: list<string>,
+     *     rows: list<list<string>>,
+     *     sideTitle: string,
+     *     sideItems: list<array{label: string, value: string}>
+     * }
+     */
+    private function adminIndexWorkspace(array $workspace): array
+    {
+        $workspace['rows'] = [];
+
+        foreach (self::ADMIN_CONFIGURATIONS as $id => $configuration) {
+            $workspace['rows'][] = [
+                $this->internalLinkCell('/admin?id=' . $id, $configuration['area']),
+                $configuration['setting'],
+                $configuration['state'],
+                $configuration['owner'],
             ];
         }
 

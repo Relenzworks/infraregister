@@ -451,6 +451,37 @@ final class AssetWebAppTest extends TestCase
         self::assertSame('Not Found', $response->getContent());
     }
 
+    public function testItLinksAdminRowsToConfigurationDetail(): void
+    {
+        $response = $this->app('admin-index-links')->handle(Request::create('/admin'));
+        $content = (string) $response->getContent();
+
+        self::assertSame(200, $response->getStatusCode());
+        self::assertStringContainsString('<a href="/admin?id=rbac-ldap-group-role-map">RBAC</a>', $content);
+        self::assertStringContainsString('<a href="/admin?id=integrations-cacti-host-sync">Integrations</a>', $content);
+    }
+
+    public function testItRendersAdminConfigurationDetailFromTheAdminRoute(): void
+    {
+        $response = $this->app('admin-detail')->handle(Request::create('/admin', 'GET', ['id' => 'rbac-ldap-group-role-map']));
+        $content = (string) $response->getContent();
+
+        self::assertSame(200, $response->getStatusCode());
+        self::assertStringContainsString('<h1>LDAP group role map</h1>', $content);
+        self::assertStringContainsString('Configuration Tabs', $content);
+        self::assertStringContainsString('Validate Policy', $content);
+        self::assertStringContainsString('Review privileged mappings before production enablement', $content);
+        self::assertStringContainsString('href="/admin" aria-current="page"', $content);
+    }
+
+    public function testItReturnsNotFoundForUnknownAdminConfigurationIds(): void
+    {
+        $response = $this->app('unknown-admin-configuration')->handle(Request::create('/admin', 'GET', ['id' => 'missing-setting']));
+
+        self::assertSame(404, $response->getStatusCode());
+        self::assertSame('Not Found', $response->getContent());
+    }
+
     public function testItRendersNonDefaultAssetStatusesOnTheAssetIndex(): void
     {
         $path = $this->storePath('asset-index-statuses');
