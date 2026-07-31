@@ -66,6 +66,17 @@ final class AssetWebApp
                 ['title' => 'Ownership', 'body' => 'Owner, custodian, department, cost center, and monitoring link.'],
             ],
         ],
+        '/assets/views' => [
+            'label' => 'Saved Views',
+            'section' => 'Inventory',
+            'title' => 'Saved Asset Views',
+            'summary' => 'Preserve operational lenses for teams that repeatedly audit, deploy, and reconcile assets.',
+            'items' => [
+                ['title' => 'Team Views', 'body' => 'Curated filters for NetOps, Field Ops, Supply, Finance, and Facilities.'],
+                ['title' => 'Shared Filters', 'body' => 'Pinned columns, lifecycle state, monitoring state, support risk, and stale-audit windows.'],
+                ['title' => 'Review Cadence', 'body' => 'Recurring views can drive scheduled audit, deployment, renewal, and cleanup work.'],
+            ],
+        ],
         '/imports' => [
             'label' => 'Imports',
             'section' => 'Inventory',
@@ -88,6 +99,28 @@ final class AssetWebApp
                 ['title' => 'Topology Worklist', 'body' => 'Missing peers, inconsistent labels, and active links without asset context.'],
             ],
         ],
+        '/network/interfaces' => [
+            'label' => 'Interfaces',
+            'section' => 'Infrastructure',
+            'title' => 'Interface Registry',
+            'summary' => 'Track ports, optics, peers, circuits, VLANs, and graph links as operational records.',
+            'items' => [
+                ['title' => 'Port Identity', 'body' => 'Device, interface name, admin state, speed, media, optic serial, and role.'],
+                ['title' => 'Link Context', 'body' => 'Peer device, peer port, circuit, provider handoff, VLAN membership, and customer edge.'],
+                ['title' => 'Monitoring Links', 'body' => 'Cacti graph references, polling state, graph gaps, and reconcile exceptions.'],
+            ],
+        ],
+        '/network/ipam' => [
+            'label' => 'IPAM',
+            'section' => 'Infrastructure',
+            'title' => 'IP Address Registry',
+            'summary' => 'Manage prefixes, VRFs, reservations, assignments, owners, and drift signals.',
+            'items' => [
+                ['title' => 'Prefixes', 'body' => 'Allocated networks, site scope, VRF ownership, utilization, and reserved pools.'],
+                ['title' => 'Assignments', 'body' => 'Device interfaces, loopbacks, customer handoffs, VIPs, and management addresses.'],
+                ['title' => 'Drift Checks', 'body' => 'Overlaps, stale reservations, unassigned live addresses, and mismatched VRF metadata.'],
+            ],
+        ],
         '/locations' => [
             'label' => 'Locations',
             'section' => 'Facilities',
@@ -97,6 +130,28 @@ final class AssetWebApp
                 ['title' => 'Rack Elevation', 'body' => 'Front and rear RU occupancy, power adjacency, and placement conflicts.'],
                 ['title' => 'Storage Positions', 'body' => 'Warehouse bins, vehicles, spares shelves, and field kits.'],
                 ['title' => 'Access Notes', 'body' => 'Contacts, entry details, environmental notes, and open transfer activity.'],
+            ],
+        ],
+        '/locations/racks' => [
+            'label' => 'Rack Elevation',
+            'section' => 'Facilities',
+            'title' => 'Rack Elevation',
+            'summary' => 'Plan RU placement, power adjacency, and rack conflicts before hardware moves.',
+            'items' => [
+                ['title' => 'Front and Rear', 'body' => 'Track occupied RUs, reserved space, rear-mounted gear, and blanking panels.'],
+                ['title' => 'Power Context', 'body' => 'Surface feed, outlet, draw, redundancy, and oversubscription concerns.'],
+                ['title' => 'Placement Rules', 'body' => 'Catch height, weight, airflow, and neighbor conflicts before dispatch.'],
+            ],
+        ],
+        '/people' => [
+            'label' => 'People',
+            'section' => 'People',
+            'title' => 'People Directory',
+            'summary' => 'Track custodians, assignees, teams, locations, and overdue returns.',
+            'items' => [
+                ['title' => 'Custodians', 'body' => 'People, teams, contractors, vehicles, and external contacts that can hold assets.'],
+                ['title' => 'Assignments', 'body' => 'Current asset counts, critical holdings, overdue returns, and acceptance state.'],
+                ['title' => 'Contact Context', 'body' => 'Team, location, escalation path, and access notes used during transfer work.'],
             ],
         ],
         '/custody' => [
@@ -121,6 +176,28 @@ final class AssetWebApp
                 ['title' => 'Discrepancies', 'body' => 'Short shipments, duplicate serials, substitutions, and damaged goods.'],
             ],
         ],
+        '/procurement/receiving' => [
+            'label' => 'Receiving',
+            'section' => 'Supply',
+            'title' => 'Receiving Workbench',
+            'summary' => 'Turn delivered goods into validated asset records with labels and initial placement.',
+            'items' => [
+                ['title' => 'Serial Capture', 'body' => 'Scan or enter serials, model identifiers, quantities, and receiving exceptions.'],
+                ['title' => 'Asset Creation', 'body' => 'Create assets from PO lines with type, owner, storage, and label metadata.'],
+                ['title' => 'Exception Handling', 'body' => 'Hold duplicate serials, substitutions, damaged goods, and short shipments.'],
+            ],
+        ],
+        '/procurement/vendors' => [
+            'label' => 'Vendors',
+            'section' => 'Supply',
+            'title' => 'Vendors and Models',
+            'summary' => 'Normalize suppliers, model catalogs, lifecycle support data, and required fields.',
+            'items' => [
+                ['title' => 'Vendor Profiles', 'body' => 'Support contacts, contract references, RMA rules, and preferred part mappings.'],
+                ['title' => 'Model Catalog', 'body' => 'Canonical names, aliases, asset type, field requirements, and lifecycle dates.'],
+                ['title' => 'Data Quality', 'body' => 'Highlight duplicate models, missing support windows, and unsafe substitutions.'],
+            ],
+        ],
         '/contracts' => [
             'label' => 'Contracts',
             'section' => 'Commercial',
@@ -143,6 +220,39 @@ final class AssetWebApp
                 ['title' => 'Spare Pools', 'body' => 'Quantity on hand, reserved count, threshold, and reorder signals.'],
             ],
         ],
+        '/maintenance/calendar' => [
+            'label' => 'Calendar',
+            'section' => 'Operations',
+            'title' => 'Maintenance Calendar',
+            'summary' => 'Coordinate planned work windows, owners, affected assets, tickets, and readiness.',
+            'items' => [
+                ['title' => 'Work Windows', 'body' => 'Planned start, end, risk, affected assets, services, and owning team.'],
+                ['title' => 'Readiness', 'body' => 'Confirm approvals, spare reservations, rollback notes, and customer impact.'],
+                ['title' => 'Evidence', 'body' => 'Keep tickets, photos, vendor notices, and completion records attached.'],
+            ],
+        ],
+        '/maintenance/rma' => [
+            'label' => 'RMA',
+            'section' => 'Operations',
+            'title' => 'RMA and Repair',
+            'summary' => 'Track failed equipment through vendor cases, shipping, replacement, and disposition.',
+            'items' => [
+                ['title' => 'Failure Intake', 'body' => 'Capture failure reason, asset, spare used, owner, and service impact.'],
+                ['title' => 'Vendor Case', 'body' => 'Track case number, shipment, replacement, credit, and expected return.'],
+                ['title' => 'Disposition', 'body' => 'Return to stock, retire, repair, scrap, or wait for vendor confirmation.'],
+            ],
+        ],
+        '/maintenance/spares' => [
+            'label' => 'Spare Pools',
+            'section' => 'Operations',
+            'title' => 'Spare Pools',
+            'summary' => 'Keep critical stock above minimum thresholds across sites, warehouses, and vehicles.',
+            'items' => [
+                ['title' => 'Thresholds', 'body' => 'Model, site, minimum count, reserved quantity, and reorder point.'],
+                ['title' => 'Reservations', 'body' => 'Hold spares for maintenance windows, RMAs, deployments, and field kits.'],
+                ['title' => 'Replenishment', 'body' => 'Surface shortages, substitutions, lead time, and open purchase order links.'],
+            ],
+        ],
         '/monitoring' => [
             'label' => 'Monitoring',
             'section' => 'Cacti',
@@ -152,6 +262,28 @@ final class AssetWebApp
                 ['title' => 'Linked Devices', 'body' => 'Assets connected to Cacti hosts, graphs, tree nodes, and polling state.'],
                 ['title' => 'Coverage Gaps', 'body' => 'Active assets without monitoring and monitored devices without asset records.'],
                 ['title' => 'Exceptions', 'body' => 'Hostname mismatch, duplicate links, retired assets still polling, and missing serials.'],
+            ],
+        ],
+        '/monitoring/cacti' => [
+            'label' => 'Cacti Linkage',
+            'section' => 'Cacti',
+            'title' => 'Cacti Linkage',
+            'summary' => 'Bridge InfraRegister assets with Cacti hosts, graph trees, polling state, and graph evidence.',
+            'items' => [
+                ['title' => 'Host Links', 'body' => 'Attach assets to Cacti hosts with hostname, device ID, polling state, and graph context.'],
+                ['title' => 'Graph Trees', 'body' => 'Preserve tree placement, interface graphs, and evidence needed for audits.'],
+                ['title' => 'Coverage', 'body' => 'Find active assets without polling and monitored hosts without inventory records.'],
+            ],
+        ],
+        '/monitoring/exceptions' => [
+            'label' => 'Exceptions',
+            'section' => 'Cacti',
+            'title' => 'Monitoring Exceptions',
+            'summary' => 'Resolve inventory and monitoring mismatches before they drift into audit or operations debt.',
+            'items' => [
+                ['title' => 'Mismatch Types', 'body' => 'Hostname mismatch, duplicate links, missing serials, and graph gaps.'],
+                ['title' => 'Triage', 'body' => 'Assign owner, confirm source data, link records, suppress known exceptions, or retire stale hosts.'],
+                ['title' => 'Evidence', 'body' => 'Keep reconcile result, source checks, and closure notes for audit history.'],
             ],
         ],
         '/reports' => [
@@ -165,6 +297,17 @@ final class AssetWebApp
                 ['title' => 'Exports', 'body' => 'Saved filters, CSV output, scheduled reports, and PDF summaries.'],
             ],
         ],
+        '/reports/builder' => [
+            'label' => 'Report Builder',
+            'section' => 'Insights',
+            'title' => 'Report Builder',
+            'summary' => 'Create saved reports from asset fields, relationships, filters, groups, and schedules.',
+            'items' => [
+                ['title' => 'Field Selection', 'body' => 'Choose asset, location, custody, contract, monitoring, and financial fields.'],
+                ['title' => 'Filters and Groups', 'body' => 'Build reusable filter sets with grouping, sorting, and ownership context.'],
+                ['title' => 'Scheduled Exports', 'body' => 'Prepare CSV and PDF outputs with owner, cadence, retention, and audience.'],
+            ],
+        ],
         '/admin' => [
             'label' => 'Admin',
             'section' => 'Configuration',
@@ -174,6 +317,50 @@ final class AssetWebApp
                 ['title' => 'Settings', 'body' => 'Asset types, required fields, numbering policy, duplicate rules, and notifications.'],
                 ['title' => 'Permissions', 'body' => 'View, create, edit, transfer, retire, contract, export, and settings access.'],
                 ['title' => 'Integrations', 'body' => 'Cacti, CSV import/export, webhooks, SSO, ticketing, procurement, and IPAM.'],
+            ],
+        ],
+        '/admin/settings' => [
+            'label' => 'Settings',
+            'section' => 'Configuration',
+            'title' => 'Settings',
+            'summary' => 'Configure asset types, lifecycle states, numbering, duplicate rules, imports, and notifications.',
+            'items' => [
+                ['title' => 'Asset Model', 'body' => 'Asset types, custom fields, required metadata, lifecycle states, and numbering policy.'],
+                ['title' => 'Validation', 'body' => 'Duplicate detection, import templates, field requirements, and safe update rules.'],
+                ['title' => 'Notifications', 'body' => 'Reminder rules for renewals, stale audits, transfer acceptance, and stock thresholds.'],
+            ],
+        ],
+        '/admin/roles' => [
+            'label' => 'Roles',
+            'section' => 'Configuration',
+            'title' => 'Roles and Permissions',
+            'summary' => 'Control who can view, create, edit, transfer, retire, export, and administer records.',
+            'items' => [
+                ['title' => 'Role Matrix', 'body' => 'Viewer, operator, manager, admin, and future plugin-specific permission bundles.'],
+                ['title' => 'LDAP Mapping', 'body' => 'Map groups to roles with explicit write permissions and fail-closed defaults.'],
+                ['title' => 'Review Evidence', 'body' => 'Audit role changes, last review, owner, and production readiness.'],
+            ],
+        ],
+        '/admin/audit-log' => [
+            'label' => 'Audit Log',
+            'section' => 'Configuration',
+            'title' => 'Audit Log',
+            'summary' => 'Review actor, action, target, source adapter, timestamp, and before/after details.',
+            'items' => [
+                ['title' => 'Activity Stream', 'body' => 'Immutable events for creates, updates, transfers, imports, exports, and integration syncs.'],
+                ['title' => 'Change Detail', 'body' => 'Before and after values, source adapter, request context, and linked evidence.'],
+                ['title' => 'Compliance Exports', 'body' => 'Filterable export bundles for asset audits, custody checks, and security reviews.'],
+            ],
+        ],
+        '/admin/integrations' => [
+            'label' => 'Integrations',
+            'section' => 'Configuration',
+            'title' => 'Integrations',
+            'summary' => 'Configure Cacti, CSV, webhooks, LDAP, ticketing, procurement, and IPAM adapters.',
+            'items' => [
+                ['title' => 'Cacti', 'body' => 'Host sync, graph evidence, tree context, and exception reconciliation.'],
+                ['title' => 'Data Exchange', 'body' => 'CSV import/export, webhooks, scheduled reports, and signed outbound events.'],
+                ['title' => 'Enterprise Systems', 'body' => 'LDAP or SSO, ticketing, procurement, IPAM, and future service adapters.'],
             ],
         ],
     ];
@@ -236,6 +423,29 @@ final class AssetWebApp
                 ['label' => 'No monitoring link', 'value' => '42 assets'],
             ],
         ],
+        '/assets/views' => [
+            'actions' => ['Create View', 'Share View', 'Schedule Review'],
+            'metrics' => [
+                ['label' => 'Saved views', 'value' => '18', 'detail' => 'Across five operating teams'],
+                ['label' => 'Scheduled', 'value' => '7', 'detail' => 'Drive recurring review work'],
+                ['label' => 'Shared', 'value' => '11', 'detail' => 'Visible to more than one team'],
+                ['label' => 'Stale', 'value' => '3', 'detail' => 'No review in 90 days'],
+            ],
+            'tableTitle' => 'Saved View Library',
+            'columns' => ['View', 'Owner', 'Filter Focus', 'Cadence', 'Next Review'],
+            'rows' => [
+                ['Core routers missing contract', 'NetOps', 'Routers without support', 'Weekly', 'Monday'],
+                ['CPE pending deployment', 'Field Ops', 'Reserved CPE in warehouse', 'Daily', 'Tomorrow'],
+                ['Spares below threshold', 'Supply', 'Optics and power supplies', 'Weekly', 'Friday'],
+                ['Retired still graphing', 'Platform', 'Retired assets with Cacti hosts', 'Daily', '06:30'],
+            ],
+            'sideTitle' => 'Pinned Columns',
+            'sideItems' => [
+                ['label' => 'Identity', 'value' => 'Asset, type, serial, site'],
+                ['label' => 'Ownership', 'value' => 'Owner, custodian, cost center'],
+                ['label' => 'Signals', 'value' => 'Monitoring, support, audit age'],
+            ],
+        ],
         '/imports' => [
             'actions' => ['Upload CSV', 'Map Fields', 'Validate Batch'],
             'metrics' => [
@@ -281,6 +491,52 @@ final class AssetWebApp
                 ['label' => 'VRF drift', 'value' => '5 devices'],
             ],
         ],
+        '/network/interfaces' => [
+            'actions' => ['Import Interfaces', 'Reconcile Optics', 'Link Graphs'],
+            'metrics' => [
+                ['label' => 'Ports', 'value' => '31,442', 'detail' => 'Physical and logical interfaces'],
+                ['label' => 'Peer gaps', 'value' => '96', 'detail' => 'Missing peer device or port'],
+                ['label' => 'Optic drift', 'value' => '37', 'detail' => 'Serial, speed, or media mismatch'],
+                ['label' => 'Graph gaps', 'value' => '64', 'detail' => 'Expected Cacti graph missing'],
+            ],
+            'tableTitle' => 'Interface Worklist',
+            'columns' => ['Device', 'Interface', 'Speed', 'Peer', 'Signal'],
+            'rows' => [
+                ['core-atl-01', 'et-0/0/3', '100G', 'agg-atl-04 xe-0/0/1', 'Peer asset missing'],
+                ['edge-sjc-02', 'et-0/0/7', '100G', 'core-sjc-01 et-2/1/0', 'Optic serial mismatch'],
+                ['agg-den-03', 'xe-1/1/0', '10G', 'Carrier handoff', 'Circuit pending'],
+                ['cpe-rno-144', 'ge-0/0/0', '1G', 'Customer access', 'No Cacti graph'],
+            ],
+            'sideTitle' => 'Reconcile Inputs',
+            'sideItems' => [
+                ['label' => 'LLDP snapshot', 'value' => '31,102 neighbors'],
+                ['label' => 'Optic inventory', 'value' => '8,924 serials'],
+                ['label' => 'Cacti graphs', 'value' => '74,210 checked'],
+            ],
+        ],
+        '/network/ipam' => [
+            'actions' => ['Reserve Prefix', 'Assign Address', 'Run Drift Check'],
+            'metrics' => [
+                ['label' => 'Prefixes', 'value' => '6,104', 'detail' => 'Production, management, and customer pools'],
+                ['label' => 'Reservations', 'value' => '211', 'detail' => 'Held for planned work'],
+                ['label' => 'Overlaps', 'value' => '3', 'detail' => 'Need owner resolution'],
+                ['label' => 'Stale', 'value' => '18', 'detail' => 'Unused assignments detected'],
+            ],
+            'tableTitle' => 'Prefix and Address Worklist',
+            'columns' => ['Prefix', 'VRF', 'Site', 'Owner', 'Signal'],
+            'rows' => [
+                ['10.42.0.0/22', 'prod-core', 'ATL1', 'NetOps', '84% utilized'],
+                ['10.77.16.0/24', 'mgmt', 'DEN2', 'Platform', '18 stale assignments'],
+                ['172.18.40.0/23', 'customer-edge', 'RNO', 'Field Ops', 'Overlap candidate'],
+                ['192.0.2.64/27', 'lab', 'SJC1', 'Engineering', 'Reservation expires soon'],
+            ],
+            'sideTitle' => 'Drift Signals',
+            'sideItems' => [
+                ['label' => 'Live but unassigned', 'value' => '14 addresses'],
+                ['label' => 'Wrong VRF', 'value' => '5 interfaces'],
+                ['label' => 'Expired holds', 'value' => '9 reservations'],
+            ],
+        ],
         '/locations' => [
             'actions' => ['Add Site', 'Plan Rack Move', 'Print Rack Labels'],
             'metrics' => [
@@ -302,6 +558,52 @@ final class AssetWebApp
                 ['label' => 'RU conflict', 'value' => '2 racks'],
                 ['label' => 'Power oversubscription', 'value' => '5 racks'],
                 ['label' => 'Missing access contact', 'value' => '7 sites'],
+            ],
+        ],
+        '/locations/racks' => [
+            'actions' => ['Reserve RU', 'Check Power', 'Print Elevation'],
+            'metrics' => [
+                ['label' => 'Racks tracked', 'value' => '842', 'detail' => 'Across sites, rooms, and cages'],
+                ['label' => 'Above 80%', 'value' => '71', 'detail' => 'High RU utilization'],
+                ['label' => 'Power conflicts', 'value' => '5', 'detail' => 'Need feed review'],
+                ['label' => 'Reserved RU', 'value' => '184', 'detail' => 'Held for planned installs'],
+            ],
+            'tableTitle' => 'Rack Placement Worklist',
+            'columns' => ['Rack', 'RU Used', 'Power', 'Reserved', 'Signal'],
+            'rows' => [
+                ['SJC1 Row C Rack 14', '38/42', 'A/B healthy', '4 RU', 'Power audit'],
+                ['ATL1 Row A Rack 09', '41/42', 'A feed high', '0 RU', 'Placement conflict'],
+                ['DEN2 Cage B Rack 03', '34/42', 'B feed review', '6 RU', 'Reserve for aggregation'],
+                ['RNO Warehouse Rack 02', '22/42', 'Single feed', '12 RU', 'Staging only'],
+            ],
+            'sideTitle' => 'Placement Rules',
+            'sideItems' => [
+                ['label' => 'Weight review', 'value' => '9 installs'],
+                ['label' => 'Airflow conflict', 'value' => '3 racks'],
+                ['label' => 'Blanking panels', 'value' => '28 missing'],
+            ],
+        ],
+        '/people' => [
+            'actions' => ['Add Contact', 'Request Return', 'Export Custody'],
+            'metrics' => [
+                ['label' => 'Custodians', 'value' => '218', 'detail' => 'People and teams with assets'],
+                ['label' => 'External contacts', 'value' => '64', 'detail' => 'Vendors and site contacts'],
+                ['label' => 'Overdue returns', 'value' => '31', 'detail' => 'Need follow-up'],
+                ['label' => 'Critical holdings', 'value' => '49', 'detail' => 'Assets requiring named owner'],
+            ],
+            'tableTitle' => 'Custodian Directory',
+            'columns' => ['Name', 'Team', 'Location', 'Assets', 'Signal'],
+            'rows' => [
+                ['Maya Chen', 'NetOps', 'SJC1', '18', '4 critical assets'],
+                ['Field Ops East', 'Field Ops', 'ATL1', '42', '7 overdue returns'],
+                ['Truck NV-12', 'Vehicle', 'RNO', '26', 'Cycle count due'],
+                ['Vendor RMA Desk', 'External', 'Remote', '5', 'Awaiting shipment'],
+            ],
+            'sideTitle' => 'Custody Follow-up',
+            'sideItems' => [
+                ['label' => 'Missing receiver', 'value' => '11 assets'],
+                ['label' => 'No contact route', 'value' => '6 custodians'],
+                ['label' => 'Review due', 'value' => '18 assignments'],
             ],
         ],
         '/custody' => [
@@ -350,6 +652,52 @@ final class AssetWebApp
                 ['label' => 'RMA credits', 'value' => '4 pending'],
             ],
         ],
+        '/procurement/receiving' => [
+            'actions' => ['Scan Serials', 'Create Assets', 'Print Labels'],
+            'metrics' => [
+                ['label' => 'Open batches', 'value' => '9', 'detail' => 'Awaiting receiving work'],
+                ['label' => 'Labels queued', 'value' => '138', 'detail' => 'Ready for print'],
+                ['label' => 'Holds', 'value' => '14', 'detail' => 'Duplicate or damaged goods'],
+                ['label' => 'Ready assets', 'value' => '212', 'detail' => 'Can be committed after review'],
+            ],
+            'tableTitle' => 'Receiving Workbench',
+            'columns' => ['Batch', 'PO', 'Received', 'State', 'Next Step'],
+            'rows' => [
+                ['RCV-8821', 'PO-10482', '16/18 routers', 'Hold', 'Resolve duplicate serials'],
+                ['RCV-8822', 'PO-10491', '400/400 optics', 'Ready', 'Print labels'],
+                ['RCV-8823', 'PO-10502', '8/12 UPS units', 'Partial', 'Await remaining shipment'],
+                ['RCV-8824', 'PO-10511', '24/24 servers', 'Mapped', 'Create assets'],
+            ],
+            'sideTitle' => 'Receiving Exceptions',
+            'sideItems' => [
+                ['label' => 'Duplicate serials', 'value' => '2 units'],
+                ['label' => 'Damaged goods', 'value' => '3 units'],
+                ['label' => 'Model mismatch', 'value' => '5 lines'],
+            ],
+        ],
+        '/procurement/vendors' => [
+            'actions' => ['Add Vendor', 'Normalize Model', 'Review Support'],
+            'metrics' => [
+                ['label' => 'Vendors', 'value' => '86', 'detail' => 'Active suppliers and OEMs'],
+                ['label' => 'Models', 'value' => '614', 'detail' => 'Canonical model records'],
+                ['label' => 'Aliases', 'value' => '143', 'detail' => 'Mapped import names'],
+                ['label' => 'Needs review', 'value' => '23', 'detail' => 'Missing required fields'],
+            ],
+            'tableTitle' => 'Vendor and Model Catalog',
+            'columns' => ['Vendor', 'Model', 'Type', 'Support State', 'Signal'],
+            'rows' => [
+                ['Juniper', 'MX204', 'Router', 'Supported', 'Required fields complete'],
+                ['FS', 'QSFP-40G-LR4', 'Optic', 'Supported', 'Alias review'],
+                ['APC', 'SRT5KRMXLT', 'UPS', 'Supported', 'Support dates missing'],
+                ['Dell', 'R660', 'Server', 'Supported', 'Warranty mapping pending'],
+            ],
+            'sideTitle' => 'Catalog Quality',
+            'sideItems' => [
+                ['label' => 'Duplicate aliases', 'value' => '12 names'],
+                ['label' => 'Missing lifecycle', 'value' => '18 models'],
+                ['label' => 'Unsafe substitution', 'value' => '4 models'],
+            ],
+        ],
         '/contracts' => [
             'actions' => ['Add Contract', 'Review Renewal', 'Attach Document'],
             'metrics' => [
@@ -396,6 +744,75 @@ final class AssetWebApp
                 ['label' => 'CPE power supplies', 'value' => 'Reorder pending'],
             ],
         ],
+        '/maintenance/calendar' => [
+            'actions' => ['Schedule Window', 'Confirm Readiness', 'Attach Ticket'],
+            'metrics' => [
+                ['label' => 'Windows', 'value' => '19', 'detail' => 'Scheduled maintenance'],
+                ['label' => 'Ready', 'value' => '11', 'detail' => 'Approved and staffed'],
+                ['label' => 'Needs spares', 'value' => '5', 'detail' => 'Awaiting reservation'],
+                ['label' => 'Customer impact', 'value' => '7', 'detail' => 'Require notice tracking'],
+            ],
+            'tableTitle' => 'Maintenance Calendar',
+            'columns' => ['Window', 'Asset Scope', 'Owner', 'Risk', 'State'],
+            'rows' => [
+                ['Tonight 23:00', 'core-atl-01 linecard', 'NetOps', 'High', 'Ready'],
+                ['Saturday 02:00', 'UPS-DAL-02 battery', 'Facilities', 'Medium', 'Review'],
+                ['Aug 4 01:00', 'DEN aggregation optics', 'Regional Ops', 'Medium', 'Needs spares'],
+                ['Aug 6 00:30', 'RNO CPE firmware batch', 'Field Ops', 'Low', 'Draft'],
+            ],
+            'sideTitle' => 'Readiness Checks',
+            'sideItems' => [
+                ['label' => 'Approvals missing', 'value' => '4 windows'],
+                ['label' => 'Rollback notes', 'value' => '6 windows'],
+                ['label' => 'Customer notice', 'value' => '7 windows'],
+            ],
+        ],
+        '/maintenance/rma' => [
+            'actions' => ['Open RMA', 'Ship Asset', 'Receive Replacement'],
+            'metrics' => [
+                ['label' => 'Open RMAs', 'value' => '14', 'detail' => 'Vendor cases in progress'],
+                ['label' => 'Awaiting vendor', 'value' => '5', 'detail' => 'No replacement yet'],
+                ['label' => 'In transit', 'value' => '4', 'detail' => 'Shipment active'],
+                ['label' => 'Disposition due', 'value' => '3', 'detail' => 'Need final action'],
+            ],
+            'tableTitle' => 'RMA and Repair Queue',
+            'columns' => ['Case', 'Asset', 'Vendor', 'State', 'Next Step'],
+            'rows' => [
+                ['RMA-8841', 'linecard-sjc-04', 'Juniper', 'Waiting', 'Vendor replacement'],
+                ['RMA-8842', 'UPS-DAL-02 battery', 'APC', 'Approved', 'Ship failed unit'],
+                ['RMA-8843', 'edge-rno-07 PSU', 'Dell', 'In transit', 'Track shipment'],
+                ['RMA-8844', 'QSFP batch 18', 'FS', 'Credit review', 'Confirm disposition'],
+            ],
+            'sideTitle' => 'Repair Signals',
+            'sideItems' => [
+                ['label' => 'Spares consumed', 'value' => '9 assets'],
+                ['label' => 'Credits pending', 'value' => '4 cases'],
+                ['label' => 'Vendor SLA risk', 'value' => '2 cases'],
+            ],
+        ],
+        '/maintenance/spares' => [
+            'actions' => ['Set Threshold', 'Reserve Spare', 'Create Reorder'],
+            'metrics' => [
+                ['label' => 'Pools', 'value' => '38', 'detail' => 'Tracked spare pools'],
+                ['label' => 'Below threshold', 'value' => '6', 'detail' => 'Need replenishment'],
+                ['label' => 'Reserved', 'value' => '112', 'detail' => 'Held for planned work'],
+                ['label' => 'Open reorders', 'value' => '9', 'detail' => 'Procurement in progress'],
+            ],
+            'tableTitle' => 'Spare Pool Thresholds',
+            'columns' => ['Pool', 'Site', 'On Hand', 'Reserved', 'Signal'],
+            'rows' => [
+                ['40G optics', 'SJC1 Stores', '18', '7', 'Below threshold'],
+                ['MX fan trays', 'ATL1 Stores', '2', '1', 'Reorder now'],
+                ['CPE power supplies', 'RNO Warehouse', '44', '12', 'Reorder pending'],
+                ['UPS batteries', 'DAL Facilities', '9', '3', 'Healthy'],
+            ],
+            'sideTitle' => 'Replenishment',
+            'sideItems' => [
+                ['label' => 'Lead time risk', 'value' => '3 models'],
+                ['label' => 'Substitutions', 'value' => '4 approved'],
+                ['label' => 'PO links', 'value' => '9 open'],
+            ],
+        ],
         '/monitoring' => [
             'actions' => ['Run Reconcile', 'Link Host', 'Suppress Exception'],
             'metrics' => [
@@ -417,6 +834,52 @@ final class AssetWebApp
                 ['label' => 'Cacti hosts', 'value' => '6,028 scanned'],
                 ['label' => 'Graph trees', 'value' => '214 scanned'],
                 ['label' => 'Polling state', 'value' => '17 exceptions'],
+            ],
+        ],
+        '/monitoring/cacti' => [
+            'actions' => ['Sync Hosts', 'Link Asset', 'Review Graphs'],
+            'metrics' => [
+                ['label' => 'Cacti hosts', 'value' => '6,028', 'detail' => 'Discovered from monitoring'],
+                ['label' => 'Linked assets', 'value' => '5,812', 'detail' => 'Have inventory record'],
+                ['label' => 'Graph trees', 'value' => '214', 'detail' => 'Scanned for context'],
+                ['label' => 'Polling gaps', 'value' => '17', 'detail' => 'Need operational review'],
+            ],
+            'tableTitle' => 'Cacti Linkage Worklist',
+            'columns' => ['Cacti Host', 'Asset', 'Graphs', 'Polling', 'Signal'],
+            'rows' => [
+                ['core-atl-01', 'IR-10042', '128', 'Up', 'Hostname alias review'],
+                ['agg-den-03', 'IR-10077', '84', 'Up', 'Interface graph gap'],
+                ['old-cpe-rno-77', 'Unlinked', '12', 'Up', 'Create or retire'],
+                ['retired-edge-02', 'IR-09011', '21', 'Up', 'Retired still polling'],
+            ],
+            'sideTitle' => 'Sync Sources',
+            'sideItems' => [
+                ['label' => 'Host table', 'value' => '6,028 rows'],
+                ['label' => 'Graph local', 'value' => '74,210 graphs'],
+                ['label' => 'Tree nodes', 'value' => '214 trees'],
+            ],
+        ],
+        '/monitoring/exceptions' => [
+            'actions' => ['Assign Exception', 'Suppress Known', 'Resolve Mismatch'],
+            'metrics' => [
+                ['label' => 'Open exceptions', 'value' => '123', 'detail' => 'Across host and graph checks'],
+                ['label' => 'High severity', 'value' => '18', 'detail' => 'Affect monitored core assets'],
+                ['label' => 'Suppressed', 'value' => '14', 'detail' => 'Known temporary drift'],
+                ['label' => 'Resolved today', 'value' => '9', 'detail' => 'Closed by reconcile work'],
+            ],
+            'tableTitle' => 'Monitoring Exception Queue',
+            'columns' => ['Exception', 'Asset', 'Host', 'Owner', 'State'],
+            'rows' => [
+                ['Hostname mismatch', 'IR-10042', 'core-atl-01', 'NetOps', 'Review'],
+                ['Duplicate link', 'IR-10077', 'agg-den-03', 'Platform', 'Assigned'],
+                ['Missing serial', 'Unknown', 'old-cpe-rno-77', 'Field Ops', 'Needs asset'],
+                ['Retired polling', 'IR-09011', 'retired-edge-02', 'NetOps', 'Disable host'],
+            ],
+            'sideTitle' => 'Exception Types',
+            'sideItems' => [
+                ['label' => 'Hostname mismatch', 'value' => '31 open'],
+                ['label' => 'Graph gaps', 'value' => '64 open'],
+                ['label' => 'Retired polling', 'value' => '11 open'],
             ],
         ],
         '/reports' => [
@@ -442,6 +905,29 @@ final class AssetWebApp
                 ['label' => 'Scheduled next', 'value' => 'Monitoring coverage'],
             ],
         ],
+        '/reports/builder' => [
+            'actions' => ['Add Field', 'Save Report', 'Schedule Export'],
+            'metrics' => [
+                ['label' => 'Fields', 'value' => '142', 'detail' => 'Available report fields'],
+                ['label' => 'Saved drafts', 'value' => '6', 'detail' => 'Report definitions in progress'],
+                ['label' => 'Scheduled', 'value' => '12', 'detail' => 'Reports with cadence'],
+                ['label' => 'Audiences', 'value' => '9', 'detail' => 'Operational and finance groups'],
+            ],
+            'tableTitle' => 'Report Builder Drafts',
+            'columns' => ['Draft', 'Owner', 'Fields', 'Filters', 'Output'],
+            'rows' => [
+                ['Critical asset coverage', 'Operations', '18', 'Support and monitoring', 'CSV'],
+                ['Custody overdue by team', 'Field Ops', '12', 'Transfer state', 'PDF'],
+                ['Warranty exposure by site', 'Finance', '16', 'Renewal window', 'CSV'],
+                ['Warehouse stock variance', 'Supply', '14', 'Site and model', 'CSV'],
+            ],
+            'sideTitle' => 'Builder Blocks',
+            'sideItems' => [
+                ['label' => 'Asset fields', 'value' => '58 available'],
+                ['label' => 'Relationship fields', 'value' => '44 available'],
+                ['label' => 'Export options', 'value' => 'CSV and PDF'],
+            ],
+        ],
         '/admin' => [
             'actions' => ['Add Role Mapping', 'Import Types', 'Audit Settings'],
             'metrics' => [
@@ -463,6 +949,98 @@ final class AssetWebApp
                 ['label' => 'Local users', 'value' => 'Dev only'],
                 ['label' => 'LDAP bind', 'value' => 'Service account'],
                 ['label' => 'Write action', 'value' => 'asset.register'],
+            ],
+        ],
+        '/admin/settings' => [
+            'actions' => ['Add Asset Type', 'Edit Lifecycle', 'Test Duplicate Rules'],
+            'metrics' => [
+                ['label' => 'Asset types', 'value' => '42', 'detail' => 'Configured inventory classes'],
+                ['label' => 'Custom fields', 'value' => '118', 'detail' => 'Across asset types'],
+                ['label' => 'Lifecycle states', 'value' => '9', 'detail' => 'Active through retired'],
+                ['label' => 'Import templates', 'value' => '7', 'detail' => 'Reusable mappings'],
+            ],
+            'tableTitle' => 'Settings Checklist',
+            'columns' => ['Area', 'Setting', 'State', 'Owner'],
+            'rows' => [
+                ['Asset types', 'Optic serial required', 'Enabled', 'NetOps'],
+                ['Lifecycle', 'Retirement approvals', 'Draft', 'Operations'],
+                ['Numbering', 'IR prefix sequence', 'Configured', 'Platform'],
+                ['Imports', 'Warehouse CSV template', 'Review', 'Supply'],
+            ],
+            'sideTitle' => 'Validation Rules',
+            'sideItems' => [
+                ['label' => 'Duplicate serials', 'value' => 'Blocking'],
+                ['label' => 'Missing required fields', 'value' => 'Blocking'],
+                ['label' => 'Unsafe lifecycle move', 'value' => 'Review'],
+            ],
+        ],
+        '/admin/roles' => [
+            'actions' => ['Add Role Mapping', 'Review Permissions', 'Test LDAP'],
+            'metrics' => [
+                ['label' => 'Roles', 'value' => '4', 'detail' => 'Viewer, operator, manager, admin'],
+                ['label' => 'LDAP maps', 'value' => '3', 'detail' => 'Groups mapped to roles'],
+                ['label' => 'Write permissions', 'value' => '7', 'detail' => 'Guarded mutation capabilities'],
+                ['label' => 'Review due', 'value' => '2', 'detail' => 'Mappings need owner review'],
+            ],
+            'tableTitle' => 'Role Permission Matrix',
+            'columns' => ['Role', 'View', 'Create', 'Transfer', 'Admin'],
+            'rows' => [
+                ['Viewer', 'Allowed', 'Denied', 'Denied', 'Denied'],
+                ['Operator', 'Allowed', 'Allowed', 'Allowed', 'Denied'],
+                ['Manager', 'Allowed', 'Allowed', 'Allowed', 'Review settings'],
+                ['Admin', 'Allowed', 'Allowed', 'Allowed', 'Allowed'],
+            ],
+            'sideTitle' => 'LDAP Mapping',
+            'sideItems' => [
+                ['label' => 'cn=infra-viewers', 'value' => 'Viewer'],
+                ['label' => 'cn=infra-operators', 'value' => 'Operator'],
+                ['label' => 'cn=infra-admins', 'value' => 'Admin'],
+            ],
+        ],
+        '/admin/audit-log' => [
+            'actions' => ['Filter Events', 'Export Evidence', 'Review Source'],
+            'metrics' => [
+                ['label' => 'Events today', 'value' => '312', 'detail' => 'Creates, changes, and reads'],
+                ['label' => 'Write events', 'value' => '48', 'detail' => 'Mutations needing audit trail'],
+                ['label' => 'Import events', 'value' => '21', 'detail' => 'Batch and row activity'],
+                ['label' => 'Integration events', 'value' => '96', 'detail' => 'Cacti and adapter sync'],
+            ],
+            'tableTitle' => 'Audit Event Stream',
+            'columns' => ['Time', 'Actor', 'Action', 'Target', 'Source'],
+            'rows' => [
+                ['07:42', 'mchen', 'asset.register', 'IR-10312', 'web'],
+                ['07:38', 'system', 'cacti.reconcile', 'core-atl-01', 'cacti'],
+                ['07:31', 'supply-bot', 'import.validate', 'IMP-2041', 'csv'],
+                ['07:14', 'admin', 'role.map', 'cn=infra-operators', 'settings'],
+            ],
+            'sideTitle' => 'Evidence Bundles',
+            'sideItems' => [
+                ['label' => 'Asset audit', 'value' => 'Ready'],
+                ['label' => 'Custody review', 'value' => '31 events'],
+                ['label' => 'Security review', 'value' => '2 mappings due'],
+            ],
+        ],
+        '/admin/integrations' => [
+            'actions' => ['Configure Cacti', 'Test Webhook', 'Import Mapping'],
+            'metrics' => [
+                ['label' => 'Integrations', 'value' => '6', 'detail' => 'Configured or planned adapters'],
+                ['label' => 'Healthy', 'value' => '4', 'detail' => 'Last check succeeded'],
+                ['label' => 'Need credentials', 'value' => '2', 'detail' => 'Blocked until configured'],
+                ['label' => 'Webhooks', 'value' => '3', 'detail' => 'Outbound event targets'],
+            ],
+            'tableTitle' => 'Integration Registry',
+            'columns' => ['Integration', 'Purpose', 'State', 'Owner'],
+            'rows' => [
+                ['Cacti', 'Host and graph linkage', 'Configured', 'Plugin'],
+                ['CSV', 'Import and export', 'Configured', 'Platform'],
+                ['Webhooks', 'Outbound events', 'Review', 'Platform'],
+                ['LDAP', 'Identity and role mapping', 'Needs credentials', 'Security'],
+            ],
+            'sideTitle' => 'Adapter Signals',
+            'sideItems' => [
+                ['label' => 'Cacti sync', 'value' => 'Last run 06:30'],
+                ['label' => 'Webhook retries', 'value' => '2 pending'],
+                ['label' => 'LDAP bind', 'value' => 'Not configured'],
             ],
         ],
     ];

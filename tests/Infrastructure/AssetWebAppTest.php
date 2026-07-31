@@ -63,16 +63,33 @@ final class AssetWebAppTest extends TestCase
         yield 'dashboard' => ['/', 'Operations Overview', 'Attention Queue', 'Tracked assets'];
         yield 'assets' => ['/assets', 'Asset Index', 'Asset Register', 'Routers'];
         yield 'register' => ['/assets/register', 'Asset Registration', 'Full Registration Flow', 'Identity'];
+        yield 'saved views' => ['/assets/views', 'Saved Asset Views', 'Saved View Library', 'Saved views'];
         yield 'imports' => ['/imports', 'Bulk Import', 'Import Batches', 'Staged rows'];
         yield 'network' => ['/network', 'Network Inventory', 'Topology Worklist', 'Interfaces'];
+        yield 'interfaces' => ['/network/interfaces', 'Interface Registry', 'Interface Worklist', 'Ports'];
+        yield 'ipam' => ['/network/ipam', 'IP Address Registry', 'Prefix and Address Worklist', 'Prefixes'];
         yield 'locations' => ['/locations', 'Location Directory', 'Location Directory', 'Sites'];
+        yield 'rack elevation' => ['/locations/racks', 'Rack Elevation', 'Rack Placement Worklist', 'Racks tracked'];
+        yield 'people' => ['/people', 'People Directory', 'Custodian Directory', 'Custodians'];
         yield 'custody' => ['/custody', 'Custody Queue', 'Custody Transfers', 'Pending transfers'];
         yield 'procurement' => ['/procurement', 'Procurement and Receiving', 'Receiving Queue', 'Open POs'];
+        yield 'receiving' => ['/procurement/receiving', 'Receiving Workbench', 'Receiving Workbench', 'Open batches'];
+        yield 'vendors' => ['/procurement/vendors', 'Vendors and Models', 'Vendor and Model Catalog', 'Vendors'];
         yield 'contracts' => ['/contracts', 'Contracts and Warranty', 'Renewal Pipeline', 'Active contracts'];
         yield 'maintenance' => ['/maintenance', 'Maintenance Work', 'Maintenance Work', 'Open work'];
+        yield 'maintenance calendar' => ['/maintenance/calendar', 'Maintenance Calendar', 'Maintenance Calendar', 'Windows'];
+        yield 'rma' => ['/maintenance/rma', 'RMA and Repair', 'RMA and Repair Queue', 'Open RMAs'];
+        yield 'spare pools' => ['/maintenance/spares', 'Spare Pools', 'Spare Pool Thresholds', 'Pools'];
         yield 'monitoring' => ['/monitoring', 'Monitoring Links', 'Monitoring Exceptions', 'Linked hosts'];
+        yield 'cacti linkage' => ['/monitoring/cacti', 'Cacti Linkage', 'Cacti Linkage Worklist', 'Cacti hosts'];
+        yield 'monitoring exceptions' => ['/monitoring/exceptions', 'Monitoring Exceptions', 'Monitoring Exception Queue', 'Open exceptions'];
         yield 'reports' => ['/reports', 'Report Library', 'Report Library', 'Saved reports'];
+        yield 'report builder' => ['/reports/builder', 'Report Builder', 'Report Builder Drafts', 'Fields'];
         yield 'admin' => ['/admin', 'Administration', 'Configuration Checklist', 'Roles'];
+        yield 'settings' => ['/admin/settings', 'Settings', 'Settings Checklist', 'Asset types'];
+        yield 'roles' => ['/admin/roles', 'Roles and Permissions', 'Role Permission Matrix', 'LDAP maps'];
+        yield 'audit log' => ['/admin/audit-log', 'Audit Log', 'Audit Event Stream', 'Events today'];
+        yield 'integrations' => ['/admin/integrations', 'Integrations', 'Integration Registry', 'Integrations'];
     }
 
     #[DataProvider('screenProvider')]
