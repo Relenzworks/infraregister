@@ -794,6 +794,7 @@ final class AssetWebApp
 
     private function hasSameOrigin(Request $request): bool
     {
+        // Phase 1 Docker usage is loopback-only. Configure trusted proxies before placing this behind TLS termination.
         $origin = $request->headers->get('Origin');
 
         if (is_string($origin) && $origin !== '') {

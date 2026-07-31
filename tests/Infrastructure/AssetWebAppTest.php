@@ -277,6 +277,23 @@ final class AssetWebAppTest extends TestCase
         self::assertStringContainsString('Registered asset Referer Router.', (string) $response->getContent());
     }
 
+    public function testItAllowsWritePasswordsContainingColons(): void
+    {
+        $path = $this->storePath('colon-password');
+        $response = AssetWebApp::fromStore($path, dirname($path), 'writer:pa:ss')->handle(
+            Request::create('/assets/register', 'POST', [
+                'name' => 'Colon Password Router',
+            ], [], [], [
+                'PHP_AUTH_USER' => 'writer',
+                'PHP_AUTH_PW' => 'pa:ss',
+                'HTTP_ORIGIN' => 'http://localhost',
+            ]),
+        );
+
+        self::assertSame(200, $response->getStatusCode());
+        self::assertStringContainsString('Registered asset Colon Password Router.', (string) $response->getContent());
+    }
+
     public function testItRejectsPostsToReadOnlyScreens(): void
     {
         $response = $this->app('read-only-post')->handle(Request::create('/assets', 'POST', [
