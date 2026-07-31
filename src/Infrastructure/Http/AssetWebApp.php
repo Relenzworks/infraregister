@@ -1027,6 +1027,61 @@ final class AssetWebApp
         ],
     ];
 
+    /**
+     * @var array<string, array{
+     *     priority: string,
+     *     item: string,
+     *     owner: string,
+     *     due: string,
+     *     signal: string,
+     *     impact: string,
+     *     source: string,
+     *     next: string
+     * }>
+     */
+    private const array ATTENTION_ITEMS = [
+        'core-router-serial-mismatch-sjc1' => [
+            'priority' => 'High',
+            'item' => 'Core router serial mismatch at SJC1',
+            'owner' => 'NetOps',
+            'due' => 'Today',
+            'signal' => 'Serial mismatch',
+            'impact' => 'Support coverage and monitoring identity may diverge',
+            'source' => 'Asset audit and Cacti reconciliation',
+            'next' => 'Confirm physical serial and update the asset record',
+        ],
+        'ups-warranty-dal-aggregation' => [
+            'priority' => 'High',
+            'item' => 'UPS warranty expires for DAL aggregation room',
+            'owner' => 'Facilities',
+            'due' => '3 days',
+            'signal' => 'Expiring coverage',
+            'impact' => 'Power support exposure for customer aggregation',
+            'source' => 'Contract renewal scan',
+            'next' => 'Attach renewal quote and owner approval',
+        ],
+        'cpe-missing-custody' => [
+            'priority' => 'Medium',
+            'item' => 'Nine CPE devices missing customer custody',
+            'owner' => 'Field Ops',
+            'due' => 'This week',
+            'signal' => 'Custody gap',
+            'impact' => 'Installed assets lack customer accountability',
+            'source' => 'Custody assignment audit',
+            'next' => 'Assign customer or field owner custody',
+        ],
+        'po-10482-duplicate-serials' => [
+            'priority' => 'Medium',
+            'item' => 'Receiving batch PO-10482 has two duplicate serials',
+            'owner' => 'Supply',
+            'due' => 'This week',
+            'signal' => 'Duplicate serials',
+            'impact' => 'Received assets cannot be committed safely',
+            'source' => 'Procurement receiving validation',
+            'next' => 'Resolve duplicate serials before commit',
+        ],
+    ];
+
     public function __construct(
         private readonly RegisterAssetHandler $registerAsset,
         private readonly AssetRepository $assetRepository,
@@ -1126,6 +1181,7 @@ final class AssetWebApp
                 && $path !== '/maintenance'
                 && $path !== '/admin'
                 && $path !== '/network'
+                && $path !== '/'
             )
             || !$request->query->has('id')
         ) {
@@ -1178,6 +1234,10 @@ final class AssetWebApp
             return $this->render($path, networkSignalId: $id);
         }
 
+        if ($path === '/') {
+            return $this->render($path, attentionItemId: $id);
+        }
+
         try {
             return $this->render($path, detailAssetId: AssetId::fromString($id));
         } catch (InvalidArgumentException) {
@@ -1212,6 +1272,7 @@ final class AssetWebApp
         ?string $maintenanceWorkId = null,
         ?string $adminConfigurationId = null,
         ?string $networkSignalId = null,
+        ?string $attentionItemId = null,
     ): Response {
         $screen = self::SCREENS[$path];
         $detailAsset = $detailAssetId === null ? null : $this->assetRepository->get($detailAssetId);
@@ -1225,6 +1286,7 @@ final class AssetWebApp
         $maintenanceWork = $maintenanceWorkId === null ? null : (self::MAINTENANCE_WORK[$maintenanceWorkId] ?? null);
         $adminConfiguration = $adminConfigurationId === null ? null : (self::ADMIN_CONFIGURATIONS[$adminConfigurationId] ?? null);
         $networkSignal = $networkSignalId === null ? null : (self::NETWORK_SIGNALS[$networkSignalId] ?? null);
+        $attentionItem = $attentionItemId === null ? null : (self::ATTENTION_ITEMS[$attentionItemId] ?? null);
 
         if ($detailAssetId !== null && $detailAsset === null) {
             return new Response('Not Found', Response::HTTP_NOT_FOUND);
@@ -1267,6 +1329,10 @@ final class AssetWebApp
         }
 
         if ($networkSignalId !== null && $networkSignal === null) {
+            return new Response('Not Found', Response::HTTP_NOT_FOUND);
+        }
+
+        if ($attentionItemId !== null && $attentionItem === null) {
             return new Response('Not Found', Response::HTTP_NOT_FOUND);
         }
 
@@ -1380,6 +1446,16 @@ final class AssetWebApp
             ];
         }
 
+        if ($attentionItem !== null) {
+            $screen = [
+                'label' => 'Dashboard',
+                'section' => 'Operations',
+                'title' => $attentionItem['item'],
+                'summary' => sprintf('%s priority item owned by %s is due %s.', $attentionItem['priority'], $attentionItem['owner'], strtolower($attentionItem['due'])),
+                'items' => [],
+            ];
+        }
+
         $successHtml = $success === null ? '' : sprintf(
             '<p class="notice" role="status">%s</p>',
             $this->escape($success),
@@ -1404,6 +1480,7 @@ final class AssetWebApp
             $maintenanceWork !== null => $this->renderMaintenanceWorkDetailContent($maintenanceWork),
             $adminConfiguration !== null => $this->renderAdminConfigurationDetailContent($adminConfiguration),
             $networkSignal !== null => $this->renderNetworkSignalDetailContent($networkSignal),
+            $attentionItem !== null => $this->renderAttentionItemDetailContent($attentionItem),
             $path === '/assets/register' => $this->renderRegistrationContent($screen, $successHtml, $errorHtml, $inputDescription),
             default => $this->renderScreenContent($path, $screen),
         };
@@ -1927,6 +2004,73 @@ final class AssetWebApp
             </body>
             </html>
             HTML, $status);
+    }
+
+    /**
+     * @param array{priority: string, item: string, owner: string, due: string, signal: string, impact: string, source: string, next: string} $item
+     */
+    private function renderAttentionItemDetailContent(array $item): string
+    {
+        $summary = $this->renderTable(
+            ['Field', 'Value'],
+            [
+                ['Priority', $item['priority']],
+                ['Item', $item['item']],
+                ['Owner', $item['owner']],
+                ['Due', $item['due']],
+                ['Signal', $item['signal']],
+                ['Impact', $item['impact']],
+                ['Source', $item['source']],
+                ['Next Step', $item['next']],
+            ],
+        );
+        $metrics = $this->renderMetrics([
+            ['label' => 'Priority', 'value' => $item['priority'], 'detail' => 'Operational urgency'],
+            ['label' => 'Due', 'value' => $item['due'], 'detail' => 'Target resolution'],
+            ['label' => 'Owner', 'value' => $item['owner'], 'detail' => 'Responsible team'],
+            ['label' => 'Signal', 'value' => $item['signal'], 'detail' => 'Queue source'],
+        ]);
+        $tabs = $this->renderSideItems([
+            ['label' => 'Summary', 'value' => 'Priority, owner, and due date'],
+            ['label' => 'Evidence', 'value' => 'Source checks and audit signal'],
+            ['label' => 'Links', 'value' => 'Related asset, contract, custody, or import'],
+            ['label' => 'Workflow', 'value' => 'Next step and close criteria'],
+            ['label' => 'History', 'value' => 'Attention queue changes'],
+        ]);
+        $actions = $this->renderActions(['Assign Owner', 'Open Related Record', 'Attach Evidence', 'Resolve Item']);
+
+        return <<<HTML
+            {$metrics}
+            <div class="workspace-grid">
+              <div class="workspace">
+                <section class="panel" aria-labelledby="attention-summary-title">
+                  <div class="panel-header">
+                    <h2 id="attention-summary-title">Summary</h2>
+                    <div class="toolbar" aria-label="Attention item actions">
+                      {$actions}
+                    </div>
+                  </div>
+                  {$summary}
+                </section>
+                <section class="panel" aria-labelledby="attention-work-title">
+                  <div class="panel-header">
+                    <h2 id="attention-work-title">Resolution Work</h2>
+                  </div>
+                  <ul class="side-list">
+                    <li><span class="side-label">Triage</span><span class="side-value">Confirm source, owner, impact, and due date before acting.</span></li>
+                    <li><span class="side-label">Record</span><span class="side-value">Open the related asset, contract, custody, import, or topology record.</span></li>
+                    <li><span class="side-label">Closure</span><span class="side-value">Attach evidence and resolve only after the underlying record is corrected.</span></li>
+                  </ul>
+                </section>
+              </div>
+              <aside class="panel" aria-labelledby="attention-tabs-title">
+                <div class="panel-header">
+                  <h2 id="attention-tabs-title">Attention Tabs</h2>
+                </div>
+                {$tabs}
+              </aside>
+            </div>
+            HTML;
     }
 
     /**
@@ -2818,7 +2962,7 @@ final class AssetWebApp
         $assets = $this->assetRepository->all();
 
         if ($assets === []) {
-            return $workspace;
+            return $path === '/' ? $this->attentionIndexWorkspace($workspace) : $workspace;
         }
 
         $registeredCount = count($assets);
@@ -3254,6 +3398,43 @@ final class AssetWebApp
                 $signal['interface'],
                 $signal['peer'],
                 $signal['signal'],
+            ];
+        }
+
+        return $workspace;
+    }
+
+    /**
+     * @param array{
+     *     actions: list<string>,
+     *     metrics: list<array{label: string, value: string, detail: string}>,
+     *     tableTitle: string,
+     *     columns: list<string>,
+     *     rows: list<list<string>>,
+     *     sideTitle: string,
+     *     sideItems: list<array{label: string, value: string}>
+     * } $workspace
+     *
+     * @return array{
+     *     actions: list<string>,
+     *     metrics: list<array{label: string, value: string, detail: string}>,
+     *     tableTitle: string,
+     *     columns: list<string>,
+     *     rows: list<list<string>>,
+     *     sideTitle: string,
+     *     sideItems: list<array{label: string, value: string}>
+     * }
+     */
+    private function attentionIndexWorkspace(array $workspace): array
+    {
+        $workspace['rows'] = [];
+
+        foreach (self::ATTENTION_ITEMS as $id => $item) {
+            $workspace['rows'][] = [
+                $item['priority'],
+                $this->internalLinkCell('/?id=' . $id, $item['item']),
+                $item['owner'],
+                $item['due'],
             ];
         }
 
