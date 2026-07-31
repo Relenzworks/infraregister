@@ -27,12 +27,12 @@ The core package must remain reusable by the Cacti plugin and should not depend 
 
 ## Initial Components
 
-- `Domain\Asset\AssetId`: immutable asset identity.
-- `Domain\Asset\AssetName`: validated human-readable name.
-- `Domain\Asset\AssetStatus`: lifecycle state enum.
-- `Application\Asset\RegisterAsset`: command DTO.
-- `Application\Asset\RegisterAssetHandler`: registration use case.
-- `Port\AssetRepository`: persistence contract.
+- `RelenzWorks\InfraRegister\Domain\Asset\AssetId`: immutable asset identity.
+- `RelenzWorks\InfraRegister\Domain\Asset\AssetName`: validated human-readable name.
+- `RelenzWorks\InfraRegister\Domain\Asset\AssetStatus`: lifecycle state enum.
+- `RelenzWorks\InfraRegister\Application\Asset\RegisterAsset`: command DTO.
+- `RelenzWorks\InfraRegister\Application\Asset\RegisterAssetHandler`: registration use case.
+- `RelenzWorks\InfraRegister\Port\AssetRepository`: persistence contract.
 
 ## Adapter Direction
 

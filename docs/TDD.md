@@ -36,7 +36,7 @@ composer quality
 composer test:coverage
 ```
 
-For platform-sensitive work:
+For platform-sensitive work after the platform tooling PR lands:
 
 ```bash
 tools/test-docker-platforms.sh ubuntu-24.04 rocky-9 ubi-9
