@@ -1468,6 +1468,25 @@ final class AssetWebApp
             $error === null ? 'asset-name-requirements' : 'asset-name-requirements asset-name-error',
         );
         $navigation = $this->renderNavigation($path);
+        $isDetailScreen = $detailAsset !== null
+            || $location !== null
+            || $custodyTransfer !== null
+            || $monitoringException !== null
+            || $importBatch !== null
+            || $receivingBatch !== null
+            || $contractRenewal !== null
+            || $savedReport !== null
+            || $maintenanceWork !== null
+            || $adminConfiguration !== null
+            || $networkSignal !== null
+            || $attentionItem !== null;
+        $backLinkHtml = $isDetailScreen
+            ? sprintf(
+                '<a class="back-link" href="%s">Back to %s</a>',
+                $this->escape($path),
+                $this->escape($screen['label']),
+            )
+            : '';
         $content = match (true) {
             $detailAsset !== null => $this->renderAssetDetailContent($detailAsset),
             $location !== null => $this->renderLocationDetailContent($location),
@@ -1654,6 +1673,20 @@ final class AssetWebApp
                   max-width: 780px;
                   margin: -8px 0 20px;
                   color: var(--muted);
+                }
+
+                .back-link {
+                  display: inline-flex;
+                  align-items: center;
+                  min-height: 36px;
+                  margin: 0 0 18px;
+                  color: var(--accent-strong);
+                  font-weight: 700;
+                  text-decoration: none;
+                }
+
+                .back-link:hover {
+                  text-decoration: underline;
                 }
 
                 .workspace {
@@ -1998,6 +2031,7 @@ final class AssetWebApp
                     <span class="metadata">{$this->escape($screen['section'])}</span>
                   </div>
                   <p class="summary">{$this->escape($screen['summary'])}</p>
+                  {$backLinkHtml}
                   {$content}
                 </main>
               </div>
