@@ -44,6 +44,17 @@ final class AssetWebApp
                 ['title' => 'Recent Activity', 'body' => 'New registrations, location moves, contract links, and lifecycle changes.'],
             ],
         ],
+        '/search' => [
+            'label' => 'Search',
+            'section' => 'Operations',
+            'title' => 'Global Search',
+            'summary' => 'Find assets, people, locations, contracts, purchase orders, Cacti hosts, IP addresses, and serials.',
+            'items' => [
+                ['title' => 'Grouped Results', 'body' => 'Search results are grouped by entity type so operators can quickly scan assets, monitoring, commercial, and custody hits.'],
+                ['title' => 'Keyboard Flow', 'body' => 'The top bar form is available from every screen and submits without mutating data.'],
+                ['title' => 'Operational Targets', 'body' => 'Targets include asset tag, serial, MAC, IP, hostname, Cacti device, purchase order, contract, person, and location.'],
+            ],
+        ],
         '/assets' => [
             'label' => 'Assets',
             'section' => 'Inventory',
@@ -398,6 +409,29 @@ final class AssetWebApp
                 ['label' => 'Registered', 'value' => 'MX204 edge router, SJC1'],
                 ['label' => 'Transferred', 'value' => 'Spare optics kit to Denver field truck'],
                 ['label' => 'Linked', 'value' => 'Cacti host core-atl-01 to asset IR-10042'],
+            ],
+        ],
+        '/search' => [
+            'actions' => ['Save Search', 'Export Results', 'Open Advanced Filters'],
+            'metrics' => [
+                ['label' => 'Search targets', 'value' => '11', 'detail' => 'Entities and identifiers indexed'],
+                ['label' => 'Asset hits', 'value' => '42', 'detail' => 'Representative matching assets'],
+                ['label' => 'Monitoring hits', 'value' => '17', 'detail' => 'Cacti hosts and graph context'],
+                ['label' => 'Commercial hits', 'value' => '12', 'detail' => 'PO, contract, and vendor records'],
+            ],
+            'tableTitle' => 'Grouped Search Results',
+            'columns' => ['Type', 'Result', 'Context', 'Action'],
+            'rows' => [
+                ['Asset', 'IR-10042 core-atl-01', 'Router in ATL1 with Cacti host link', 'Open asset'],
+                ['Cacti Host', 'core-atl-01', 'Linked to IR-10042 with hostname alias signal', 'Review linkage'],
+                ['IP Address', '10.42.0.17', 'prod-core VRF on core-atl-01', 'Open IPAM'],
+                ['Contract', 'SUP-3092', 'Juniper support covering core routers', 'Review renewal'],
+            ],
+            'sideTitle' => 'Search Targets',
+            'sideItems' => [
+                ['label' => 'Identifiers', 'value' => 'Asset tag, serial, MAC, IP'],
+                ['label' => 'Operations', 'value' => 'Hostname, Cacti device, location'],
+                ['label' => 'Commercial', 'value' => 'PO, contract, vendor'],
             ],
         ],
         '/assets' => [
@@ -2207,6 +2241,23 @@ final class AssetWebApp
                   font-weight: 800;
                 }
 
+                .global-search {
+                  display: flex;
+                  align-items: center;
+                  gap: 8px;
+                  width: min(460px, 100%);
+                  margin-left: auto;
+                }
+
+                .global-search input {
+                  min-height: 40px;
+                }
+
+                .global-search button {
+                  min-height: 40px;
+                  padding: 0 12px;
+                }
+
                 .app-layout {
                   display: grid;
                   grid-template-columns: 232px minmax(0, 1fr);
@@ -2614,8 +2665,15 @@ final class AssetWebApp
 
                 @media (max-width: 900px) {
                   .header-inner {
+                    flex-wrap: wrap;
                     min-height: 58px;
                     padding: 0 16px;
+                  }
+
+                  .global-search {
+                    order: 3;
+                    width: 100%;
+                    margin-left: 0;
                   }
 
                   .app-layout {
@@ -2681,6 +2739,7 @@ final class AssetWebApp
                 @media print {
                   body { background: #ffffff; }
                   .skip-link, .sidebar, button, .button-link { display: none; }
+                  .global-search { display: none; }
                   .app-layout { display: block; }
                   .panel { border-color: #000000; }
                 }
@@ -2694,6 +2753,10 @@ final class AssetWebApp
                     <span class="brand-mark" aria-hidden="true">IR</span>
                     <span>InfraRegister</span>
                   </a>
+                  <form class="global-search" role="search" method="get" action="/search">
+                    <input type="search" name="q" aria-label="Global search" placeholder="Search assets, hosts, IPs">
+                    <button type="submit">Search</button>
+                  </form>
                   <a class="button-link" href="/assets/register">Register Asset</a>
                 </div>
               </header>
