@@ -792,6 +792,66 @@ final class AssetWebApp
         ],
     ];
 
+    /**
+     * @var array<string, array{
+     *     name: string,
+     *     audience: string,
+     *     cadence: string,
+     *     lastRun: string,
+     *     owner: string,
+     *     format: string,
+     *     filters: string,
+     *     schedule: string,
+     *     next: string
+     * }>
+     */
+    private const array SAVED_REPORTS = [
+        'asset-audit-exceptions' => [
+            'name' => 'Asset audit exceptions',
+            'audience' => 'Operations',
+            'cadence' => 'Daily',
+            'lastRun' => '07:00',
+            'owner' => 'Operations',
+            'format' => 'CSV and PDF',
+            'filters' => 'Missing owner, serial, site, or lifecycle evidence',
+            'schedule' => 'Weekdays at 07:00',
+            'next' => 'Review 57 compliance gaps before export approval',
+        ],
+        'contract-renewal-risk' => [
+            'name' => 'Contract renewal risk',
+            'audience' => 'Finance',
+            'cadence' => 'Weekly',
+            'lastRun' => 'Monday',
+            'owner' => 'Finance',
+            'format' => 'PDF summary',
+            'filters' => 'Renewals inside 60 days and uncovered critical assets',
+            'schedule' => 'Mondays at 08:30',
+            'next' => 'Send renewal exceptions to contract owners',
+        ],
+        'monitoring-coverage' => [
+            'name' => 'Monitoring coverage',
+            'audience' => 'NetOps',
+            'cadence' => 'Daily',
+            'lastRun' => '06:30',
+            'owner' => 'NetOps',
+            'format' => 'CSV',
+            'filters' => 'Active assets without Cacti links and polling exceptions',
+            'schedule' => 'Daily at 06:30',
+            'next' => 'Reconcile unmatched Cacti hosts',
+        ],
+        'warehouse-cycle-count' => [
+            'name' => 'Warehouse cycle count',
+            'audience' => 'Supply',
+            'cadence' => 'Monthly',
+            'lastRun' => 'Jul 28',
+            'owner' => 'Supply',
+            'format' => 'CSV',
+            'filters' => 'Storage locations, spare pools, and count variance',
+            'schedule' => 'Last weekday of each month',
+            'next' => 'Approve count variance report',
+        ],
+    ];
+
     public function __construct(
         private readonly RegisterAssetHandler $registerAsset,
         private readonly AssetRepository $assetRepository,
@@ -887,6 +947,7 @@ final class AssetWebApp
                 && $path !== '/imports'
                 && $path !== '/procurement'
                 && $path !== '/contracts'
+                && $path !== '/reports'
             )
             || !$request->query->has('id')
         ) {
@@ -923,6 +984,10 @@ final class AssetWebApp
             return $this->render($path, contractRenewalId: $id);
         }
 
+        if ($path === '/reports') {
+            return $this->render($path, savedReportId: $id);
+        }
+
         try {
             return $this->render($path, detailAssetId: AssetId::fromString($id));
         } catch (InvalidArgumentException) {
@@ -953,6 +1018,7 @@ final class AssetWebApp
         ?string $importBatchId = null,
         ?string $receivingBatchId = null,
         ?string $contractRenewalId = null,
+        ?string $savedReportId = null,
     ): Response {
         $screen = self::SCREENS[$path];
         $detailAsset = $detailAssetId === null ? null : $this->assetRepository->get($detailAssetId);
@@ -962,6 +1028,7 @@ final class AssetWebApp
         $importBatch = $importBatchId === null ? null : (self::IMPORT_BATCHES[$importBatchId] ?? null);
         $receivingBatch = $receivingBatchId === null ? null : (self::RECEIVING_BATCHES[$receivingBatchId] ?? null);
         $contractRenewal = $contractRenewalId === null ? null : (self::CONTRACT_RENEWALS[$contractRenewalId] ?? null);
+        $savedReport = $savedReportId === null ? null : (self::SAVED_REPORTS[$savedReportId] ?? null);
 
         if ($detailAssetId !== null && $detailAsset === null) {
             return new Response('Not Found', Response::HTTP_NOT_FOUND);
@@ -988,6 +1055,10 @@ final class AssetWebApp
         }
 
         if ($contractRenewalId !== null && $contractRenewal === null) {
+            return new Response('Not Found', Response::HTTP_NOT_FOUND);
+        }
+
+        if ($savedReportId !== null && $savedReport === null) {
             return new Response('Not Found', Response::HTTP_NOT_FOUND);
         }
 
@@ -1061,6 +1132,16 @@ final class AssetWebApp
             ];
         }
 
+        if ($savedReport !== null) {
+            $screen = [
+                'label' => 'Reports',
+                'section' => 'Insights',
+                'title' => $savedReport['name'],
+                'summary' => sprintf('%s report for %s runs %s and last completed at %s.', $savedReport['name'], $savedReport['audience'], strtolower($savedReport['cadence']), $savedReport['lastRun']),
+                'items' => [],
+            ];
+        }
+
         $successHtml = $success === null ? '' : sprintf(
             '<p class="notice" role="status">%s</p>',
             $this->escape($success),
@@ -1081,6 +1162,7 @@ final class AssetWebApp
             $importBatch !== null => $this->renderImportBatchDetailContent($importBatch),
             $receivingBatch !== null => $this->renderReceivingBatchDetailContent($receivingBatch),
             $contractRenewal !== null => $this->renderContractRenewalDetailContent($contractRenewal),
+            $savedReport !== null => $this->renderSavedReportDetailContent($savedReport),
             $path === '/assets/register' => $this->renderRegistrationContent($screen, $successHtml, $errorHtml, $inputDescription),
             default => $this->renderScreenContent($path, $screen),
         };
@@ -1604,6 +1686,74 @@ final class AssetWebApp
             </body>
             </html>
             HTML, $status);
+    }
+
+    /**
+     * @param array{name: string, audience: string, cadence: string, lastRun: string, owner: string, format: string, filters: string, schedule: string, next: string} $report
+     */
+    private function renderSavedReportDetailContent(array $report): string
+    {
+        $summary = $this->renderTable(
+            ['Field', 'Value'],
+            [
+                ['Report', $report['name']],
+                ['Audience', $report['audience']],
+                ['Cadence', $report['cadence']],
+                ['Last Run', $report['lastRun']],
+                ['Owner', $report['owner']],
+                ['Format', $report['format']],
+                ['Filters', $report['filters']],
+                ['Schedule', $report['schedule']],
+                ['Next Step', $report['next']],
+            ],
+        );
+        $metrics = $this->renderMetrics([
+            ['label' => 'Cadence', 'value' => $report['cadence'], 'detail' => 'Run frequency'],
+            ['label' => 'Last Run', 'value' => $report['lastRun'], 'detail' => 'Most recent completion'],
+            ['label' => 'Format', 'value' => $report['format'], 'detail' => 'Export output'],
+            ['label' => 'Owner', 'value' => $report['owner'], 'detail' => 'Report owner'],
+        ]);
+        $tabs = $this->renderSideItems([
+            ['label' => 'Summary', 'value' => 'Report purpose and audience'],
+            ['label' => 'Filters', 'value' => 'Saved query constraints'],
+            ['label' => 'Schedule', 'value' => 'Cadence and delivery'],
+            ['label' => 'Exports', 'value' => 'CSV, PDF, and retention'],
+            ['label' => 'Audit', 'value' => 'Run and download history'],
+        ]);
+        $actions = $this->renderActions(['Run Report', 'Export CSV', 'Schedule Report', 'Edit Filter']);
+
+        return <<<HTML
+            {$metrics}
+            <div class="workspace-grid">
+              <div class="workspace">
+                <section class="panel" aria-labelledby="report-summary-title">
+                  <div class="panel-header">
+                    <h2 id="report-summary-title">Summary</h2>
+                    <div class="toolbar" aria-label="Report actions">
+                      {$actions}
+                    </div>
+                  </div>
+                  {$summary}
+                </section>
+                <section class="panel" aria-labelledby="report-work-title">
+                  <div class="panel-header">
+                    <h2 id="report-work-title">Report Work</h2>
+                  </div>
+                  <ul class="side-list">
+                    <li><span class="side-label">Inputs</span><span class="side-value">Preserve saved filters, audience, cadence, and owner before execution.</span></li>
+                    <li><span class="side-label">Outputs</span><span class="side-value">Track CSV and PDF exports with retention, evidence, and approval state.</span></li>
+                    <li><span class="side-label">Delivery</span><span class="side-value">Schedule report runs without granting write access to raw asset data.</span></li>
+                  </ul>
+                </section>
+              </div>
+              <aside class="panel" aria-labelledby="report-tabs-title">
+                <div class="panel-header">
+                  <h2 id="report-tabs-title">Report Tabs</h2>
+                </div>
+                {$tabs}
+              </aside>
+            </div>
+            HTML;
     }
 
     /**
@@ -2205,6 +2355,10 @@ final class AssetWebApp
             return $this->contractIndexWorkspace($workspace);
         }
 
+        if ($path === '/reports') {
+            return $this->reportIndexWorkspace($workspace);
+        }
+
         $assets = $this->assetRepository->all();
 
         if ($assets === []) {
@@ -2495,6 +2649,43 @@ final class AssetWebApp
                 $contract['coverage'],
                 $contract['owner'],
                 $contract['due'],
+            ];
+        }
+
+        return $workspace;
+    }
+
+    /**
+     * @param array{
+     *     actions: list<string>,
+     *     metrics: list<array{label: string, value: string, detail: string}>,
+     *     tableTitle: string,
+     *     columns: list<string>,
+     *     rows: list<list<string>>,
+     *     sideTitle: string,
+     *     sideItems: list<array{label: string, value: string}>
+     * } $workspace
+     *
+     * @return array{
+     *     actions: list<string>,
+     *     metrics: list<array{label: string, value: string, detail: string}>,
+     *     tableTitle: string,
+     *     columns: list<string>,
+     *     rows: list<list<string>>,
+     *     sideTitle: string,
+     *     sideItems: list<array{label: string, value: string}>
+     * }
+     */
+    private function reportIndexWorkspace(array $workspace): array
+    {
+        $workspace['rows'] = [];
+
+        foreach (self::SAVED_REPORTS as $id => $report) {
+            $workspace['rows'][] = [
+                $this->internalLinkCell('/reports?id=' . $id, $report['name']),
+                $report['audience'],
+                $report['cadence'],
+                $report['lastRun'],
             ];
         }
 

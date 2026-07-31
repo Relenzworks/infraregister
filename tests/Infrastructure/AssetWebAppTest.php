@@ -389,6 +389,37 @@ final class AssetWebAppTest extends TestCase
         self::assertSame('Not Found', $response->getContent());
     }
 
+    public function testItLinksReportRowsToSavedReportDetail(): void
+    {
+        $response = $this->app('report-index-links')->handle(Request::create('/reports'));
+        $content = (string) $response->getContent();
+
+        self::assertSame(200, $response->getStatusCode());
+        self::assertStringContainsString('<a href="/reports?id=asset-audit-exceptions">Asset audit exceptions</a>', $content);
+        self::assertStringContainsString('<a href="/reports?id=warehouse-cycle-count">Warehouse cycle count</a>', $content);
+    }
+
+    public function testItRendersSavedReportDetailFromTheReportsRoute(): void
+    {
+        $response = $this->app('report-detail')->handle(Request::create('/reports', 'GET', ['id' => 'asset-audit-exceptions']));
+        $content = (string) $response->getContent();
+
+        self::assertSame(200, $response->getStatusCode());
+        self::assertStringContainsString('<h1>Asset audit exceptions</h1>', $content);
+        self::assertStringContainsString('Report Tabs', $content);
+        self::assertStringContainsString('Run Report', $content);
+        self::assertStringContainsString('Review 57 compliance gaps before export approval', $content);
+        self::assertStringContainsString('href="/reports" aria-current="page"', $content);
+    }
+
+    public function testItReturnsNotFoundForUnknownSavedReportIds(): void
+    {
+        $response = $this->app('unknown-saved-report')->handle(Request::create('/reports', 'GET', ['id' => 'missing-report']));
+
+        self::assertSame(404, $response->getStatusCode());
+        self::assertSame('Not Found', $response->getContent());
+    }
+
     public function testItRendersNonDefaultAssetStatusesOnTheAssetIndex(): void
     {
         $path = $this->storePath('asset-index-statuses');
