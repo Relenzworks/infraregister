@@ -1,0 +1,33 @@
+name: Weekly Extended Platforms
+
+on:
+  schedule:
+    - cron: '17 8 * * 1'
+  workflow_dispatch:
+
+jobs:
+  macos:
+    name: macOS PHP 8.3
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+      - uses: ramsey/composer-install@v3
+      - run: composer quality
+
+  freebsd:
+    name: FreeBSD PHP 8.3
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: vmactions/freebsd-vm@v1
+        with:
+          usesh: true
+          prepare: |
+            pkg install -y ca_root_nss git php83 php83-composer php83-ctype php83-curl php83-dom php83-filter php83-mbstring php83-phar php83-simplexml php83-tokenizer php83-xml php83-xmlwriter php83-zip unzip
+          run: |
+            composer install --no-interaction --no-progress
+            composer quality
