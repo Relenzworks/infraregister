@@ -1336,7 +1336,10 @@ final class AssetWebApp
             return new Response('Not Found', Response::HTTP_NOT_FOUND);
         }
 
+        $detailStatus = null;
+
         if ($detailAsset !== null) {
+            $detailStatus = $this->assetStatusLabel($detailAsset->status);
             $screen = [
                 'label' => 'Assets',
                 'section' => 'Inventory',
@@ -1347,6 +1350,7 @@ final class AssetWebApp
         }
 
         if ($location !== null) {
+            $detailStatus = $location['work'];
             $screen = [
                 'label' => 'Locations',
                 'section' => 'Facilities',
@@ -1357,6 +1361,7 @@ final class AssetWebApp
         }
 
         if ($custodyTransfer !== null) {
+            $detailStatus = $custodyTransfer['state'];
             $screen = [
                 'label' => 'Custody',
                 'section' => 'People',
@@ -1367,6 +1372,7 @@ final class AssetWebApp
         }
 
         if ($monitoringException !== null) {
+            $detailStatus = $monitoringException['severity'];
             $screen = [
                 'label' => 'Monitoring',
                 'section' => 'Cacti',
@@ -1377,6 +1383,7 @@ final class AssetWebApp
         }
 
         if ($importBatch !== null) {
+            $detailStatus = $importBatch['state'];
             $screen = [
                 'label' => 'Imports',
                 'section' => 'Inventory',
@@ -1387,6 +1394,7 @@ final class AssetWebApp
         }
 
         if ($receivingBatch !== null) {
+            $detailStatus = $receivingBatch['exception'];
             $screen = [
                 'label' => 'Procurement',
                 'section' => 'Supply',
@@ -1397,6 +1405,7 @@ final class AssetWebApp
         }
 
         if ($contractRenewal !== null) {
+            $detailStatus = $contractRenewal['state'];
             $screen = [
                 'label' => 'Contracts',
                 'section' => 'Commercial',
@@ -1407,6 +1416,7 @@ final class AssetWebApp
         }
 
         if ($savedReport !== null) {
+            $detailStatus = $savedReport['cadence'];
             $screen = [
                 'label' => 'Reports',
                 'section' => 'Insights',
@@ -1417,6 +1427,7 @@ final class AssetWebApp
         }
 
         if ($maintenanceWork !== null) {
+            $detailStatus = $maintenanceWork['state'];
             $screen = [
                 'label' => 'Maintenance',
                 'section' => 'Operations',
@@ -1427,6 +1438,7 @@ final class AssetWebApp
         }
 
         if ($adminConfiguration !== null) {
+            $detailStatus = $adminConfiguration['state'];
             $screen = [
                 'label' => 'Admin',
                 'section' => 'Configuration',
@@ -1437,6 +1449,7 @@ final class AssetWebApp
         }
 
         if ($networkSignal !== null) {
+            $detailStatus = $networkSignal['signal'];
             $screen = [
                 'label' => 'Network',
                 'section' => 'Infrastructure',
@@ -1447,6 +1460,7 @@ final class AssetWebApp
         }
 
         if ($attentionItem !== null) {
+            $detailStatus = $attentionItem['priority'];
             $screen = [
                 'label' => 'Dashboard',
                 'section' => 'Operations',
@@ -1495,6 +1509,9 @@ final class AssetWebApp
 
         $browserTitleParts[] = 'InfraRegister';
         $browserTitle = implode(' - ', $browserTitleParts);
+        $metadata = $detailStatus === null
+            ? $screen['section']
+            : sprintf('%s / %s', $screen['section'], $detailStatus);
         $content = match (true) {
             $detailAsset !== null => $this->renderAssetDetailContent($detailAsset),
             $location !== null => $this->renderLocationDetailContent($location),
@@ -2036,7 +2053,7 @@ final class AssetWebApp
                 <main id="content">
                   <div class="page-title">
                     <h1>{$this->escape($screen['title'])}</h1>
-                    <span class="metadata">{$this->escape($screen['section'])}</span>
+                    <span class="metadata">{$this->escape($metadata)}</span>
                   </div>
                   <p class="summary">{$this->escape($screen['summary'])}</p>
                   {$backLinkHtml}
