@@ -12,6 +12,7 @@ This repository contains the framework-independent DDD/hexagonal core. Cacti int
 - PHPStan level 10
 - PHPUnit with coverage reporting
 - TDD-first changes
+- GPL-3.0-or-later licensing
 
 ## Commands
 
