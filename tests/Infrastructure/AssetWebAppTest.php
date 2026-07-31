@@ -81,6 +81,7 @@ final class AssetWebAppTest extends TestCase
         $response = $this->app('screen-' . trim(str_replace('/', '-', $path), '-'))->handle(Request::create($path));
 
         self::assertSame(200, $response->getStatusCode());
+        self::assertStringContainsString(sprintf('<title>%s - InfraRegister</title>', $title), (string) $response->getContent());
         self::assertStringContainsString(sprintf('<h1>%s</h1>', $title), (string) $response->getContent());
         self::assertStringContainsString('aria-label="Primary navigation"', (string) $response->getContent());
         self::assertStringContainsString(sprintf('href="%s" aria-current="page"', $path), (string) $response->getContent());
@@ -163,6 +164,7 @@ final class AssetWebAppTest extends TestCase
         $content = (string) $response->getContent();
 
         self::assertSame(200, $response->getStatusCode());
+        self::assertStringContainsString('<title>Detail Router 01 - Assets - InfraRegister</title>', $content);
         self::assertStringContainsString('<h1>Detail Router 01</h1>', $content);
         self::assertStringContainsString('Asset Tabs', $content);
         self::assertStringContainsString('Summary', $content);
@@ -531,6 +533,7 @@ final class AssetWebAppTest extends TestCase
         $content = (string) $response->getContent();
 
         self::assertSame(200, $response->getStatusCode());
+        self::assertStringContainsString('<title>Core router serial mismatch at SJC1 - Dashboard - InfraRegister</title>', $content);
         self::assertStringContainsString('<h1>Core router serial mismatch at SJC1</h1>', $content);
         self::assertStringContainsString('Attention Tabs', $content);
         self::assertStringContainsString('Resolve Item', $content);
