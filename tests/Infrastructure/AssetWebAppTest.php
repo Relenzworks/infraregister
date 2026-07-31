@@ -327,6 +327,37 @@ final class AssetWebAppTest extends TestCase
         self::assertSame('Not Found', $response->getContent());
     }
 
+    public function testItLinksProcurementRowsToReceivingDetail(): void
+    {
+        $response = $this->app('procurement-index-links')->handle(Request::create('/procurement'));
+        $content = (string) $response->getContent();
+
+        self::assertSame(200, $response->getStatusCode());
+        self::assertStringContainsString('<a href="/procurement?id=po-10482">PO-10482</a>', $content);
+        self::assertStringContainsString('<a href="/procurement?id=po-10511">PO-10511</a>', $content);
+    }
+
+    public function testItRendersReceivingDetailFromTheProcurementRoute(): void
+    {
+        $response = $this->app('procurement-detail')->handle(Request::create('/procurement', 'GET', ['id' => 'po-10482']));
+        $content = (string) $response->getContent();
+
+        self::assertSame(200, $response->getStatusCode());
+        self::assertStringContainsString('<h1>PO-10482</h1>', $content);
+        self::assertStringContainsString('Receiving Tabs', $content);
+        self::assertStringContainsString('Create Assets', $content);
+        self::assertStringContainsString('Resolve duplicate serials before commit', $content);
+        self::assertStringContainsString('href="/procurement" aria-current="page"', $content);
+    }
+
+    public function testItReturnsNotFoundForUnknownReceivingIds(): void
+    {
+        $response = $this->app('unknown-receiving')->handle(Request::create('/procurement', 'GET', ['id' => 'po-99999']));
+
+        self::assertSame(404, $response->getStatusCode());
+        self::assertSame('Not Found', $response->getContent());
+    }
+
     public function testItRendersNonDefaultAssetStatusesOnTheAssetIndex(): void
     {
         $path = $this->storePath('asset-index-statuses');

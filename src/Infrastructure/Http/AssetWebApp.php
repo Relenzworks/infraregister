@@ -672,6 +672,61 @@ final class AssetWebApp
         ],
     ];
 
+    /**
+     * @var array<string, array{
+     *     po: string,
+     *     vendor: string,
+     *     expected: string,
+     *     exception: string,
+     *     owner: string,
+     *     received: string,
+     *     labels: string,
+     *     next: string
+     * }>
+     */
+    private const array RECEIVING_BATCHES = [
+        'po-10482' => [
+            'po' => 'PO-10482',
+            'vendor' => 'Juniper',
+            'expected' => '18 routers',
+            'exception' => '2 duplicate serials',
+            'owner' => 'Supply',
+            'received' => '16',
+            'labels' => '16 queued',
+            'next' => 'Resolve duplicate serials before commit',
+        ],
+        'po-10491' => [
+            'po' => 'PO-10491',
+            'vendor' => 'FS',
+            'expected' => '400 optics',
+            'exception' => 'Awaiting count',
+            'owner' => 'Warehouse',
+            'received' => '0',
+            'labels' => 'Pending count',
+            'next' => 'Complete physical count',
+        ],
+        'po-10502' => [
+            'po' => 'PO-10502',
+            'vendor' => 'APC',
+            'expected' => '12 UPS units',
+            'exception' => 'No asset class mapping',
+            'owner' => 'Facilities',
+            'received' => '12',
+            'labels' => 'Blocked',
+            'next' => 'Map UPS model to asset type',
+        ],
+        'po-10511' => [
+            'po' => 'PO-10511',
+            'vendor' => 'Dell',
+            'expected' => '24 servers',
+            'exception' => 'Ready to receive',
+            'owner' => 'Platform',
+            'received' => '24',
+            'labels' => '24 queued',
+            'next' => 'Commit received assets',
+        ],
+    ];
+
     public function __construct(
         private readonly RegisterAssetHandler $registerAsset,
         private readonly AssetRepository $assetRepository,
@@ -765,6 +820,7 @@ final class AssetWebApp
                 && $path !== '/custody'
                 && $path !== '/monitoring'
                 && $path !== '/imports'
+                && $path !== '/procurement'
             )
             || !$request->query->has('id')
         ) {
@@ -791,6 +847,10 @@ final class AssetWebApp
 
         if ($path === '/imports') {
             return $this->render($path, importBatchId: $id);
+        }
+
+        if ($path === '/procurement') {
+            return $this->render($path, receivingBatchId: $id);
         }
 
         try {
@@ -821,6 +881,7 @@ final class AssetWebApp
         ?string $custodyTransferId = null,
         ?string $monitoringExceptionId = null,
         ?string $importBatchId = null,
+        ?string $receivingBatchId = null,
     ): Response {
         $screen = self::SCREENS[$path];
         $detailAsset = $detailAssetId === null ? null : $this->assetRepository->get($detailAssetId);
@@ -828,6 +889,7 @@ final class AssetWebApp
         $custodyTransfer = $custodyTransferId === null ? null : (self::CUSTODY_TRANSFERS[$custodyTransferId] ?? null);
         $monitoringException = $monitoringExceptionId === null ? null : (self::MONITORING_EXCEPTIONS[$monitoringExceptionId] ?? null);
         $importBatch = $importBatchId === null ? null : (self::IMPORT_BATCHES[$importBatchId] ?? null);
+        $receivingBatch = $receivingBatchId === null ? null : (self::RECEIVING_BATCHES[$receivingBatchId] ?? null);
 
         if ($detailAssetId !== null && $detailAsset === null) {
             return new Response('Not Found', Response::HTTP_NOT_FOUND);
@@ -846,6 +908,10 @@ final class AssetWebApp
         }
 
         if ($importBatchId !== null && $importBatch === null) {
+            return new Response('Not Found', Response::HTTP_NOT_FOUND);
+        }
+
+        if ($receivingBatchId !== null && $receivingBatch === null) {
             return new Response('Not Found', Response::HTTP_NOT_FOUND);
         }
 
@@ -899,6 +965,16 @@ final class AssetWebApp
             ];
         }
 
+        if ($receivingBatch !== null) {
+            $screen = [
+                'label' => 'Procurement',
+                'section' => 'Supply',
+                'title' => $receivingBatch['po'],
+                'summary' => sprintf('%s receiving from %s expects %s.', $receivingBatch['po'], $receivingBatch['vendor'], $receivingBatch['expected']),
+                'items' => [],
+            ];
+        }
+
         $successHtml = $success === null ? '' : sprintf(
             '<p class="notice" role="status">%s</p>',
             $this->escape($success),
@@ -917,6 +993,7 @@ final class AssetWebApp
             $custodyTransfer !== null => $this->renderCustodyTransferDetailContent($custodyTransfer),
             $monitoringException !== null => $this->renderMonitoringExceptionDetailContent($monitoringException),
             $importBatch !== null => $this->renderImportBatchDetailContent($importBatch),
+            $receivingBatch !== null => $this->renderReceivingBatchDetailContent($receivingBatch),
             $path === '/assets/register' => $this->renderRegistrationContent($screen, $successHtml, $errorHtml, $inputDescription),
             default => $this->renderScreenContent($path, $screen),
         };
@@ -1443,6 +1520,73 @@ final class AssetWebApp
     }
 
     /**
+     * @param array{po: string, vendor: string, expected: string, exception: string, owner: string, received: string, labels: string, next: string} $batch
+     */
+    private function renderReceivingBatchDetailContent(array $batch): string
+    {
+        $summary = $this->renderTable(
+            ['Field', 'Value'],
+            [
+                ['Purchase Order', $batch['po']],
+                ['Vendor', $batch['vendor']],
+                ['Expected', $batch['expected']],
+                ['Received', $batch['received']],
+                ['Exception', $batch['exception']],
+                ['Owner', $batch['owner']],
+                ['Labels', $batch['labels']],
+                ['Next Step', $batch['next']],
+            ],
+        );
+        $metrics = $this->renderMetrics([
+            ['label' => 'Expected', 'value' => $batch['expected'], 'detail' => 'PO line summary'],
+            ['label' => 'Received', 'value' => $batch['received'], 'detail' => 'Count captured'],
+            ['label' => 'Labels', 'value' => $batch['labels'], 'detail' => 'Asset labels'],
+            ['label' => 'Owner', 'value' => $batch['owner'], 'detail' => 'Receiving owner'],
+        ]);
+        $tabs = $this->renderSideItems([
+            ['label' => 'Summary', 'value' => 'PO and receiving state'],
+            ['label' => 'Lines', 'value' => 'Expected models and quantities'],
+            ['label' => 'Serials', 'value' => 'Captured identities'],
+            ['label' => 'Labels', 'value' => 'Print queue'],
+            ['label' => 'Audit', 'value' => 'Receiving evidence'],
+        ]);
+        $actions = $this->renderActions(['Receive Items', 'Resolve Hold', 'Print Labels', 'Create Assets']);
+
+        return <<<HTML
+            {$metrics}
+            <div class="workspace-grid">
+              <div class="workspace">
+                <section class="panel" aria-labelledby="receiving-summary-title">
+                  <div class="panel-header">
+                    <h2 id="receiving-summary-title">Summary</h2>
+                    <div class="toolbar" aria-label="Receiving actions">
+                      {$actions}
+                    </div>
+                  </div>
+                  {$summary}
+                </section>
+                <section class="panel" aria-labelledby="receiving-work-title">
+                  <div class="panel-header">
+                    <h2 id="receiving-work-title">Receiving Work</h2>
+                  </div>
+                  <ul class="side-list">
+                    <li><span class="side-label">Identity</span><span class="side-value">Capture serials, model normalization, and duplicate signals.</span></li>
+                    <li><span class="side-label">Placement</span><span class="side-value">Assign storage, site staging, or deployment owner before commit.</span></li>
+                    <li><span class="side-label">Audit</span><span class="side-value">Keep PO, label, and exception evidence with the created assets.</span></li>
+                  </ul>
+                </section>
+              </div>
+              <aside class="panel" aria-labelledby="receiving-tabs-title">
+                <div class="panel-header">
+                  <h2 id="receiving-tabs-title">Receiving Tabs</h2>
+                </div>
+                {$tabs}
+              </aside>
+            </div>
+            HTML;
+    }
+
+    /**
      * @param array{number: string, source: string, rows: string, state: string, owner: string, valid: string, blocked: string, next: string} $batch
      */
     private function renderImportBatchDetailContent(array $batch): string
@@ -1897,6 +2041,10 @@ final class AssetWebApp
             return $this->importIndexWorkspace($workspace);
         }
 
+        if ($path === '/procurement') {
+            return $this->procurementIndexWorkspace($workspace);
+        }
+
         $assets = $this->assetRepository->all();
 
         if ($assets === []) {
@@ -2112,6 +2260,43 @@ final class AssetWebApp
                 $batch['rows'],
                 $batch['state'],
                 $batch['owner'],
+            ];
+        }
+
+        return $workspace;
+    }
+
+    /**
+     * @param array{
+     *     actions: list<string>,
+     *     metrics: list<array{label: string, value: string, detail: string}>,
+     *     tableTitle: string,
+     *     columns: list<string>,
+     *     rows: list<list<string>>,
+     *     sideTitle: string,
+     *     sideItems: list<array{label: string, value: string}>
+     * } $workspace
+     *
+     * @return array{
+     *     actions: list<string>,
+     *     metrics: list<array{label: string, value: string, detail: string}>,
+     *     tableTitle: string,
+     *     columns: list<string>,
+     *     rows: list<list<string>>,
+     *     sideTitle: string,
+     *     sideItems: list<array{label: string, value: string}>
+     * }
+     */
+    private function procurementIndexWorkspace(array $workspace): array
+    {
+        $workspace['rows'] = [];
+
+        foreach (self::RECEIVING_BATCHES as $id => $batch) {
+            $workspace['rows'][] = [
+                $this->internalLinkCell('/procurement?id=' . $id, $batch['po']),
+                $batch['vendor'],
+                $batch['expected'],
+                $batch['exception'],
             ];
         }
 
