@@ -1,0 +1,15 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+use RelenzWorks\InfraRegister\Infrastructure\Cli\RegisterAssetCommand;
+use Symfony\Component\Console\Application;
+
+require dirname(__DIR__) . '/vendor/autoload.php';
+
+$application = new Application('InfraRegister');
+$application->add(new RegisterAssetCommand());
+$application->setDefaultCommand('list');
+
+exit($application->run());
