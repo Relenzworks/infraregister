@@ -9,6 +9,7 @@ use RelenzWorks\InfraRegister\Application\Asset\RegisterAsset;
 use RelenzWorks\InfraRegister\Application\Asset\RegisterAssetHandler;
 use RelenzWorks\InfraRegister\Application\Security\AccessPolicy;
 use RelenzWorks\InfraRegister\Domain\Asset\Asset;
+use RelenzWorks\InfraRegister\Domain\Asset\AssetId;
 use RelenzWorks\InfraRegister\Domain\Asset\AssetStatus;
 use RelenzWorks\InfraRegister\Domain\Security\Permission;
 use RelenzWorks\InfraRegister\Infrastructure\Persistence\AssetStoreUnavailable;
@@ -16,6 +17,7 @@ use RelenzWorks\InfraRegister\Infrastructure\Persistence\JsonAssetRepository;
 use RelenzWorks\InfraRegister\Infrastructure\Security\LocalUserDirectory;
 use RelenzWorks\InfraRegister\Port\AssetRepository;
 use RelenzWorks\InfraRegister\Port\UserDirectory;
+use Symfony\Component\HttpFoundation\Exception\BadRequestException;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -471,7 +473,7 @@ final class AssetWebApp
         }
 
         return match ($request->getMethod()) {
-            Request::METHOD_GET => $this->render($path),
+            Request::METHOD_GET => $this->renderGet($path, $request),
             default => new Response(
                 'Method Not Allowed',
                 Response::HTTP_METHOD_NOT_ALLOWED,
@@ -516,13 +518,53 @@ final class AssetWebApp
         return $this->render('/assets/register', success: sprintf('Registered asset %s.', $asset->name->value));
     }
 
+    private function renderGet(string $path, Request $request): Response
+    {
+        if ($path !== '/assets' || !$request->query->has('id')) {
+            return $this->render($path);
+        }
+
+        try {
+            $id = $request->query->get('id');
+        } catch (BadRequestException) {
+            return new Response('Not Found', Response::HTTP_NOT_FOUND);
+        }
+
+        if (!is_string($id)) {
+            return new Response('Not Found', Response::HTTP_NOT_FOUND);
+        }
+
+        try {
+            return $this->render($path, detailAssetId: AssetId::fromString($id));
+        } catch (InvalidArgumentException) {
+            return new Response('Not Found', Response::HTTP_NOT_FOUND);
+        }
+    }
+
     private function render(
         string $path,
         ?string $success = null,
         ?string $error = null,
         int $status = Response::HTTP_OK,
+        ?AssetId $detailAssetId = null,
     ): Response {
         $screen = self::SCREENS[$path];
+        $detailAsset = $detailAssetId === null ? null : $this->assetRepository->get($detailAssetId);
+
+        if ($detailAssetId !== null && $detailAsset === null) {
+            return new Response('Not Found', Response::HTTP_NOT_FOUND);
+        }
+
+        if ($detailAsset !== null) {
+            $screen = [
+                'label' => 'Assets',
+                'section' => 'Inventory',
+                'title' => $detailAsset->name->value,
+                'summary' => sprintf('Asset record %s in %s.', $detailAsset->id->value, strtolower($this->assetStatusLabel($detailAsset->status))),
+                'items' => [],
+            ];
+        }
+
         $successHtml = $success === null ? '' : sprintf(
             '<p class="notice" role="status">%s</p>',
             $this->escape($success),
@@ -535,9 +577,11 @@ final class AssetWebApp
             $error === null ? 'asset-name-requirements' : 'asset-name-requirements asset-name-error',
         );
         $navigation = $this->renderNavigation($path);
-        $content = $path === '/assets/register'
-            ? $this->renderRegistrationContent($screen, $successHtml, $errorHtml, $inputDescription)
-            : $this->renderScreenContent($path, $screen);
+        $content = match (true) {
+            $detailAsset !== null => $this->renderAssetDetailContent($detailAsset),
+            $path === '/assets/register' => $this->renderRegistrationContent($screen, $successHtml, $errorHtml, $inputDescription),
+            default => $this->renderScreenContent($path, $screen),
+        };
 
         return new Response(<<<HTML
             <!doctype html>
@@ -1060,6 +1104,71 @@ final class AssetWebApp
             HTML, $status);
     }
 
+    private function renderAssetDetailContent(Asset $asset): string
+    {
+        $status = $this->assetStatusLabel($asset->status);
+        $identifier = $this->escape($asset->id->value);
+        $summary = $this->renderTable(
+            ['Field', 'Value'],
+            [
+                ['Name', $asset->name->value],
+                ['Identifier', $asset->id->value],
+                ['Status', $status],
+                ['Source', 'Registered'],
+                ['Custodian', 'Unassigned'],
+                ['Monitoring', 'Not linked'],
+            ],
+        );
+        $metrics = $this->renderMetrics([
+            ['label' => 'Lifecycle', 'value' => $status, 'detail' => 'Current asset status'],
+            ['label' => 'Custody', 'value' => 'Unassigned', 'detail' => 'No custodian assigned'],
+            ['label' => 'Monitoring', 'value' => 'Not linked', 'detail' => 'No Cacti host attached'],
+            ['label' => 'Audit', 'value' => 'New', 'detail' => 'Metadata review pending'],
+        ]);
+        $tabs = $this->renderSideItems([
+            ['label' => 'Summary', 'value' => 'Identity and lifecycle'],
+            ['label' => 'Hardware', 'value' => 'Serial, vendor, model'],
+            ['label' => 'Network', 'value' => 'Interfaces, IPs, circuits'],
+            ['label' => 'Custody', 'value' => 'Assignments and transfers'],
+            ['label' => 'Audit', 'value' => 'Event history'],
+        ]);
+        $actions = $this->renderActions(['Edit Asset', 'Change Status', 'Transfer Custody', 'Link Monitoring']);
+
+        return <<<HTML
+            {$metrics}
+            <div class="workspace-grid">
+              <div class="workspace">
+                <section class="panel" aria-labelledby="asset-summary-title">
+                  <div class="panel-header">
+                    <h2 id="asset-summary-title">Summary</h2>
+                    <div class="toolbar" aria-label="Asset actions">
+                      {$actions}
+                    </div>
+                  </div>
+                  {$summary}
+                </section>
+                <section class="panel" aria-labelledby="asset-followup-title">
+                  <div class="panel-header">
+                    <h2 id="asset-followup-title">Follow-up Work</h2>
+                  </div>
+                  <ul class="side-list">
+                    <li><span class="side-label">Metadata</span><span class="side-value">Add asset tag, serial, type, vendor, and model.</span></li>
+                    <li><span class="side-label">Placement</span><span class="side-value">Assign site, rack, owner, and custodian.</span></li>
+                    <li><span class="side-label">Monitoring</span><span class="side-value">Link a Cacti host when polling starts.</span></li>
+                  </ul>
+                </section>
+              </div>
+              <aside class="panel" aria-labelledby="asset-tabs-title">
+                <div class="panel-header">
+                  <h2 id="asset-tabs-title">Asset Tabs</h2>
+                </div>
+                {$tabs}
+              </aside>
+            </div>
+            <p class="field-note">Record identifier: {$identifier}</p>
+            HTML;
+    }
+
     /**
      * @param array{
      *     label: string,
@@ -1216,7 +1325,7 @@ final class AssetWebApp
             $workspace['columns'] = ['Asset', 'Status', 'Identifier', 'Source', 'Custodian'];
             $workspace['rows'] = array_map(
                 fn(Asset $asset): array => [
-                    $asset->name->value,
+                    $this->assetLinkCell($asset),
                     $this->assetStatusLabel($asset->status),
                     substr($asset->id->value, 0, 8),
                     'Registered',
@@ -1252,6 +1361,11 @@ final class AssetWebApp
             AssetStatus::InStorage => 'In storage',
             AssetStatus::Retired => 'Retired',
         };
+    }
+
+    private function assetLinkCell(Asset $asset): string
+    {
+        return sprintf('asset-link:%s|%s', $asset->id->value, $asset->name->value);
     }
 
     /**
@@ -1305,7 +1419,7 @@ final class AssetWebApp
             $cells = '';
 
             foreach ($row as $cell) {
-                $cells .= sprintf('<td>%s</td>', $this->escape($cell));
+                $cells .= $this->renderTableCell($cell);
             }
 
             $body .= sprintf('<tr>%s</tr>', $cells);
@@ -1316,6 +1430,21 @@ final class AssetWebApp
             $head,
             $body,
         );
+    }
+
+    private function renderTableCell(string $cell): string
+    {
+        if (str_starts_with($cell, 'asset-link:')) {
+            [$id, $label] = explode('|', substr($cell, strlen('asset-link:')), 2);
+
+            return sprintf(
+                '<td><a href="/assets?id=%s">%s</a></td>',
+                $this->escape($id),
+                $this->escape($label),
+            );
+        }
+
+        return sprintf('<td>%s</td>', $this->escape($cell));
     }
 
     /**
