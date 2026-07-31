@@ -36,6 +36,15 @@ final class JsonAssetRepositoryTest extends TestCase
         self::assertNull($repository->get(AssetId::generate()));
     }
 
+    public function testItReturnsNullBeforeTheStoreDirectoryExists(): void
+    {
+        $path = $this->directory('missing-store-directory-root') . '/nested/assets.json';
+        $repository = new JsonAssetRepository($path);
+
+        self::assertNull($repository->get(AssetId::generate()));
+        self::assertFileDoesNotExist($path . '.lock');
+    }
+
     public function testItRefusesToOverwriteInvalidJsonWhenSaving(): void
     {
         $path = $this->storePath('invalid-json.json');

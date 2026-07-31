@@ -120,6 +120,12 @@ final class JsonAssetRepository implements AssetRepository
      */
     private function readAssets(): array
     {
+        $this->enforcePathBoundary($this->path);
+
+        if (!is_file($this->path)) {
+            return [];
+        }
+
         return $this->withLock(false, fn(): array => $this->readAssetsFromDisk(false));
     }
 

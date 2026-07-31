@@ -20,8 +20,9 @@ for platform in "${platforms[@]}"; do
 
   docker build --pull -f "${dockerfile}" -t "${image}" "${repo_root}"
   docker run --rm \
+    -u "$(id -u):$(id -g)" \
     -v "${repo_root}:/app" \
-    -v "infraregister-composer-cache-${platform}:/tmp/composer-cache" \
+    -e COMPOSER_HOME=/tmp/composer-home \
     -e COMPOSER_CACHE_DIR=/tmp/composer-cache \
     -e COMPOSER_ROOT_VERSION="${COMPOSER_ROOT_VERSION:-0.1.x-dev}" \
     -w /app \
