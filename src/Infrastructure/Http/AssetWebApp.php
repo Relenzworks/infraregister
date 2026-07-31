@@ -2090,6 +2090,7 @@ final class AssetWebApp
         $metadata = $detailStatus === null
             ? $screen['section']
             : sprintf('%s / %s', $screen['section'], $detailStatus);
+        $breadcrumbs = $this->renderBreadcrumbs($path, $screen, $isDetailScreen);
         $content = match (true) {
             $detailAsset !== null => $this->renderAssetDetailContent($detailAsset),
             $location !== null => $this->renderLocationDetailContent($location),
@@ -2259,6 +2260,37 @@ final class AssetWebApp
                 .nav-link[aria-current="page"] {
                   background: #dff2f5;
                   color: var(--accent-strong);
+                }
+
+                .breadcrumbs {
+                  margin: 0 0 12px;
+                  color: var(--muted);
+                  font-size: 13px;
+                  font-weight: 650;
+                }
+
+                .breadcrumbs ol {
+                  display: flex;
+                  flex-wrap: wrap;
+                  gap: 6px;
+                  margin: 0;
+                  padding: 0;
+                  list-style: none;
+                }
+
+                .breadcrumbs li:not(:last-child)::after {
+                  content: "/";
+                  margin-left: 6px;
+                  color: var(--line-strong);
+                }
+
+                .breadcrumbs a {
+                  color: var(--accent-strong);
+                  text-decoration: none;
+                }
+
+                .breadcrumbs a:hover {
+                  text-decoration: underline;
                 }
 
                 main {
@@ -2670,6 +2702,7 @@ final class AssetWebApp
                   {$navigation}
                 </nav>
                 <main id="content" tabindex="-1">
+                  {$breadcrumbs}
                   <div class="page-title">
                     <h1>{$this->escape($screen['title'])}</h1>
                     <span class="metadata">{$this->escape($metadata)}</span>
@@ -4272,6 +4305,64 @@ final class AssetWebApp
         }
 
         return sprintf('<div class="screen-grid">%s</div>', $cards);
+    }
+
+    /**
+     * @param array{
+     *     label: string,
+     *     section: string,
+     *     title: string,
+     *     summary: string,
+     *     items: list<array{title: string, body: string}>
+     * } $screen
+     */
+    private function renderBreadcrumbs(string $path, array $screen, bool $isDetailScreen): string
+    {
+        $items = '';
+
+        if ($path !== '/') {
+            $items .= sprintf(
+                '<li><a href="/">%s</a></li>',
+                $this->escape(self::SCREENS['/']['label']),
+            );
+        }
+
+        $parentPath = $this->parentPath($path);
+
+        if ($parentPath !== null && $parentPath !== '/' && isset(self::SCREENS[$parentPath])) {
+            $items .= sprintf(
+                '<li><a href="%s">%s</a></li>',
+                $this->escape($parentPath),
+                $this->escape(self::SCREENS[$parentPath]['label']),
+            );
+        }
+
+        if ($isDetailScreen) {
+            $items .= sprintf(
+                '<li><a href="%s">%s</a></li>',
+                $this->escape($path),
+                $this->escape(self::SCREENS[$path]['label']),
+            );
+        }
+
+        $items .= sprintf('<li aria-current="page">%s</li>', $this->escape($screen['title']));
+
+        return sprintf('<nav class="breadcrumbs" aria-label="Breadcrumb"><ol>%s</ol></nav>', $items);
+    }
+
+    private function parentPath(string $path): ?string
+    {
+        if ($path === '/') {
+            return null;
+        }
+
+        $lastSlash = strrpos($path, '/');
+
+        if ($lastSlash === false || $lastSlash === 0) {
+            return '/';
+        }
+
+        return substr($path, 0, $lastSlash);
     }
 
     private function renderNavigation(string $currentPath): string
