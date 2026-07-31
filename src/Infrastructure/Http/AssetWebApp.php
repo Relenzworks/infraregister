@@ -162,6 +162,273 @@ final class AssetWebApp
         ],
     ];
 
+    /**
+     * @var array<string, array{
+     *     actions: list<string>,
+     *     metrics: list<array{label: string, value: string, detail: string}>,
+     *     tableTitle: string,
+     *     columns: list<string>,
+     *     rows: list<list<string>>,
+     *     sideTitle: string,
+     *     sideItems: list<array{label: string, value: string}>
+     * }>
+     */
+    private const array WORKSPACES = [
+        '/' => [
+            'actions' => ['Export Queue', 'Start Audit'],
+            'metrics' => [
+                ['label' => 'Tracked assets', 'value' => '14,284', 'detail' => '312 added this month'],
+                ['label' => 'Unassigned', 'value' => '187', 'detail' => 'Missing owner or custodian'],
+                ['label' => 'Monitoring gaps', 'value' => '42', 'detail' => 'Active assets without polling context'],
+                ['label' => 'Expiring coverage', 'value' => '29', 'detail' => 'Support ends inside 60 days'],
+            ],
+            'tableTitle' => 'Attention Queue',
+            'columns' => ['Priority', 'Item', 'Owner', 'Due'],
+            'rows' => [
+                ['High', 'Core router serial mismatch at SJC1', 'NetOps', 'Today'],
+                ['High', 'UPS warranty expires for DAL aggregation room', 'Facilities', '3 days'],
+                ['Medium', 'Nine CPE devices missing customer custody', 'Field Ops', 'This week'],
+                ['Medium', 'Receiving batch PO-10482 has two duplicate serials', 'Supply', 'This week'],
+            ],
+            'sideTitle' => 'Recent Activity',
+            'sideItems' => [
+                ['label' => 'Registered', 'value' => 'MX204 edge router, SJC1'],
+                ['label' => 'Transferred', 'value' => 'Spare optics kit to Denver field truck'],
+                ['label' => 'Linked', 'value' => 'Cacti host core-atl-01 to asset IR-10042'],
+            ],
+        ],
+        '/assets' => [
+            'actions' => ['Save View', 'Bulk Edit', 'Export CSV'],
+            'metrics' => [
+                ['label' => 'Routers', 'value' => '426', 'detail' => '18 missing support coverage'],
+                ['label' => 'Switches', 'value' => '1,882', 'detail' => '64 pending audit'],
+                ['label' => 'Optics', 'value' => '8,924', 'detail' => '1,102 in spare pools'],
+                ['label' => 'CPE', 'value' => '2,731', 'detail' => '117 awaiting deployment'],
+            ],
+            'tableTitle' => 'Asset Register',
+            'columns' => ['Asset', 'Type', 'Site', 'Status', 'Custodian'],
+            'rows' => [
+                ['IR-10042 core-atl-01', 'Router', 'ATL1', 'In service', 'NetOps'],
+                ['IR-10077 agg-den-03', 'Switch', 'DEN2', 'In service', 'Regional Ops'],
+                ['IR-10112 spare-qsfp-40g-17', 'Optic', 'SJC1 Stores', 'Available', 'Supply'],
+                ['IR-10204 cpe-warehouse-044', 'CPE', 'RNO Warehouse', 'Reserved', 'Field Ops'],
+            ],
+            'sideTitle' => 'Saved Views',
+            'sideItems' => [
+                ['label' => 'Core routers', 'value' => '426 assets'],
+                ['label' => 'Audit stale', 'value' => '64 assets'],
+                ['label' => 'No monitoring link', 'value' => '42 assets'],
+            ],
+        ],
+        '/network' => [
+            'actions' => ['Import LLDP', 'Reconcile Peers', 'Reserve Prefix'],
+            'metrics' => [
+                ['label' => 'Interfaces', 'value' => '31,442', 'detail' => '96 missing peer'],
+                ['label' => 'Circuits', 'value' => '1,238', 'detail' => '14 pending carrier turn-up'],
+                ['label' => 'Prefixes', 'value' => '6,104', 'detail' => '211 reserved'],
+                ['label' => 'Optic alerts', 'value' => '37', 'detail' => 'Serial or speed mismatch'],
+            ],
+            'tableTitle' => 'Topology Worklist',
+            'columns' => ['Device', 'Interface', 'Peer', 'Signal'],
+            'rows' => [
+                ['core-atl-01', 'et-0/0/3', 'agg-atl-04', 'Peer asset missing'],
+                ['agg-den-03', 'xe-1/1/0', 'carrier handoff', 'Circuit pending'],
+                ['edge-sjc-02', 'et-0/0/7', 'core-sjc-01', 'Optic serial mismatch'],
+                ['cpe-rno-144', 'ge-0/0/0', 'customer access', 'No Cacti graph'],
+            ],
+            'sideTitle' => 'IPAM Signals',
+            'sideItems' => [
+                ['label' => 'Overlapping reservations', 'value' => '3 prefixes'],
+                ['label' => 'Unused assignments', 'value' => '18 addresses'],
+                ['label' => 'VRF drift', 'value' => '5 devices'],
+            ],
+        ],
+        '/locations' => [
+            'actions' => ['Add Site', 'Plan Rack Move', 'Print Rack Labels'],
+            'metrics' => [
+                ['label' => 'Sites', 'value' => '118', 'detail' => '32 carrier hotels'],
+                ['label' => 'Racks', 'value' => '842', 'detail' => '71 above 80% RU use'],
+                ['label' => 'Warehouses', 'value' => '9', 'detail' => '4 with pending counts'],
+                ['label' => 'Vehicles', 'value' => '46', 'detail' => '12 hold assigned spares'],
+            ],
+            'tableTitle' => 'Location Directory',
+            'columns' => ['Location', 'Type', 'Occupancy', 'Open Work'],
+            'rows' => [
+                ['SJC1 Row C Rack 14', 'Rack', '38/42 RU', 'Power audit'],
+                ['DEN2 Cage B', 'Site', '71% used', 'Access note update'],
+                ['RNO Warehouse Bin 7', 'Storage', '184 assets', 'Cycle count'],
+                ['Truck NV-12', 'Vehicle', '26 assets', 'Transfer review'],
+            ],
+            'sideTitle' => 'Placement Conflicts',
+            'sideItems' => [
+                ['label' => 'RU conflict', 'value' => '2 racks'],
+                ['label' => 'Power oversubscription', 'value' => '5 racks'],
+                ['label' => 'Missing access contact', 'value' => '7 sites'],
+            ],
+        ],
+        '/custody' => [
+            'actions' => ['Create Transfer', 'Accept Batch', 'Request Return'],
+            'metrics' => [
+                ['label' => 'Pending transfers', 'value' => '34', 'detail' => '8 overdue'],
+                ['label' => 'Assigned people', 'value' => '218', 'detail' => '31 hold critical assets'],
+                ['label' => 'Vehicle kits', 'value' => '46', 'detail' => '6 need count'],
+                ['label' => 'Audit evidence', 'value' => '91%', 'detail' => 'Receiver confirmation coverage'],
+            ],
+            'tableTitle' => 'Custody Transfers',
+            'columns' => ['Transfer', 'Assets', 'From', 'To', 'State'],
+            'rows' => [
+                ['TR-1044', '7', 'RNO Warehouse', 'Truck NV-12', 'Pending accept'],
+                ['TR-1045', '1', 'NetOps', 'Vendor RMA', 'In transit'],
+                ['TR-1046', '12', 'ATL Stores', 'Field Ops East', 'Draft'],
+                ['TR-1047', '3', 'Truck CO-04', 'DEN2 Cage B', 'Overdue'],
+            ],
+            'sideTitle' => 'Custody Exceptions',
+            'sideItems' => [
+                ['label' => 'Overdue accepts', 'value' => '8 transfers'],
+                ['label' => 'Missing receiver', 'value' => '11 assets'],
+                ['label' => 'No audit photo', 'value' => '17 transfers'],
+            ],
+        ],
+        '/procurement' => [
+            'actions' => ['Receive PO', 'Normalize Model', 'Print Labels'],
+            'metrics' => [
+                ['label' => 'Open POs', 'value' => '28', 'detail' => '$1.42M committed'],
+                ['label' => 'Receiving holds', 'value' => '9', 'detail' => 'Serial or quantity issue'],
+                ['label' => 'Vendor models', 'value' => '614', 'detail' => '23 need normalization'],
+                ['label' => 'Labels queued', 'value' => '138', 'detail' => 'Ready for print'],
+            ],
+            'tableTitle' => 'Receiving Queue',
+            'columns' => ['PO', 'Vendor', 'Expected', 'Exception'],
+            'rows' => [
+                ['PO-10482', 'Juniper', '18 routers', '2 duplicate serials'],
+                ['PO-10491', 'FS', '400 optics', 'Awaiting count'],
+                ['PO-10502', 'APC', '12 UPS units', 'No asset class mapping'],
+                ['PO-10511', 'Dell', '24 servers', 'Ready to receive'],
+            ],
+            'sideTitle' => 'Vendor Tasks',
+            'sideItems' => [
+                ['label' => 'Normalize', 'value' => '23 model names'],
+                ['label' => 'Support dates', 'value' => '18 lines missing'],
+                ['label' => 'RMA credits', 'value' => '4 pending'],
+            ],
+        ],
+        '/contracts' => [
+            'actions' => ['Add Contract', 'Review Renewal', 'Attach Document'],
+            'metrics' => [
+                ['label' => 'Active contracts', 'value' => '342', 'detail' => '$8.7M annualized'],
+                ['label' => 'Renewals', 'value' => '29', 'detail' => 'Inside 60 days'],
+                ['label' => 'Uncovered critical', 'value' => '18', 'detail' => 'No active support'],
+                ['label' => 'Leased assets', 'value' => '441', 'detail' => '22 end this quarter'],
+            ],
+            'tableTitle' => 'Renewal Pipeline',
+            'columns' => ['Contract', 'Vendor', 'Coverage', 'Owner', 'Due'],
+            'rows' => [
+                ['SUP-3092', 'Juniper', 'Core routers', 'NetOps', '18 days'],
+                ['SUP-3110', 'APC', 'UPS fleet', 'Facilities', '31 days'],
+                ['LIC-2018', 'IPAM', 'Address registry', 'Platform', '44 days'],
+                ['LEASE-884', 'Dell', 'Edge compute', 'Finance', '58 days'],
+            ],
+            'sideTitle' => 'Coverage Gaps',
+            'sideItems' => [
+                ['label' => 'Critical routers', 'value' => '4 assets'],
+                ['label' => 'UPS devices', 'value' => '9 assets'],
+                ['label' => 'Server nodes', 'value' => '5 assets'],
+            ],
+        ],
+        '/maintenance' => [
+            'actions' => ['Schedule Window', 'Open RMA', 'Reserve Spare'],
+            'metrics' => [
+                ['label' => 'Open work', 'value' => '76', 'detail' => '19 scheduled'],
+                ['label' => 'RMAs', 'value' => '14', 'detail' => '5 awaiting vendor'],
+                ['label' => 'Spare pools', 'value' => '38', 'detail' => '6 below threshold'],
+                ['label' => 'Retirements', 'value' => '112', 'detail' => 'Pending disposition'],
+            ],
+            'tableTitle' => 'Maintenance Work',
+            'columns' => ['Work', 'Asset', 'Window', 'Owner', 'State'],
+            'rows' => [
+                ['MW-2041', 'core-atl-01', 'Tonight 23:00', 'NetOps', 'Ready'],
+                ['RMA-8841', 'linecard-sjc-04', 'Vendor ship', 'Supply', 'Waiting'],
+                ['MW-2047', 'UPS-DAL-02', 'Saturday 02:00', 'Facilities', 'Review'],
+                ['RET-4412', 'CPE batch 2021', 'Queued', 'Field Ops', 'Dispose'],
+            ],
+            'sideTitle' => 'Spare Pool Alerts',
+            'sideItems' => [
+                ['label' => '40G optics', 'value' => 'Below threshold'],
+                ['label' => 'MX fan trays', 'value' => '2 remaining'],
+                ['label' => 'CPE power supplies', 'value' => 'Reorder pending'],
+            ],
+        ],
+        '/monitoring' => [
+            'actions' => ['Run Reconcile', 'Link Host', 'Suppress Exception'],
+            'metrics' => [
+                ['label' => 'Linked hosts', 'value' => '5,812', 'detail' => '96.4% of monitored hosts'],
+                ['label' => 'Unlinked assets', 'value' => '42', 'detail' => 'Active and expected monitored'],
+                ['label' => 'Orphan hosts', 'value' => '17', 'detail' => 'Polling without asset record'],
+                ['label' => 'Graph gaps', 'value' => '64', 'detail' => 'Missing key interface graphs'],
+            ],
+            'tableTitle' => 'Monitoring Exceptions',
+            'columns' => ['Signal', 'Asset', 'Cacti Host', 'Action'],
+            'rows' => [
+                ['Hostname mismatch', 'IR-10042', 'core-atl-01', 'Review alias'],
+                ['No asset record', 'Unknown', 'old-cpe-rno-77', 'Create or retire'],
+                ['Missing graphs', 'IR-10077', 'agg-den-03', 'Add graph template'],
+                ['Retired still polling', 'IR-09011', 'retired-edge-02', 'Disable host'],
+            ],
+            'sideTitle' => 'Reconcile Sources',
+            'sideItems' => [
+                ['label' => 'Cacti hosts', 'value' => '6,028 scanned'],
+                ['label' => 'Graph trees', 'value' => '214 scanned'],
+                ['label' => 'Polling state', 'value' => '17 exceptions'],
+            ],
+        ],
+        '/reports' => [
+            'actions' => ['Schedule Report', 'Export CSV', 'Build Filter'],
+            'metrics' => [
+                ['label' => 'Saved reports', 'value' => '48', 'detail' => '12 scheduled'],
+                ['label' => 'Exports today', 'value' => '31', 'detail' => 'CSV and PDF'],
+                ['label' => 'Compliance gaps', 'value' => '57', 'detail' => 'Missing metadata or evidence'],
+                ['label' => 'Financial views', 'value' => '9', 'detail' => 'Cost, coverage, lease'],
+            ],
+            'tableTitle' => 'Report Library',
+            'columns' => ['Report', 'Audience', 'Cadence', 'Last Run'],
+            'rows' => [
+                ['Asset audit exceptions', 'Operations', 'Daily', '07:00'],
+                ['Contract renewal risk', 'Finance', 'Weekly', 'Monday'],
+                ['Monitoring coverage', 'NetOps', 'Daily', '06:30'],
+                ['Warehouse cycle count', 'Supply', 'Monthly', 'Jul 28'],
+            ],
+            'sideTitle' => 'Export Queue',
+            'sideItems' => [
+                ['label' => 'CSV ready', 'value' => '7 files'],
+                ['label' => 'PDF ready', 'value' => '3 files'],
+                ['label' => 'Scheduled next', 'value' => 'Monitoring coverage'],
+            ],
+        ],
+        '/admin' => [
+            'actions' => ['Add Role Mapping', 'Import Types', 'Audit Settings'],
+            'metrics' => [
+                ['label' => 'Roles', 'value' => '4', 'detail' => 'Viewer, operator, manager, admin'],
+                ['label' => 'LDAP maps', 'value' => '3', 'detail' => 'Groups mapped to roles'],
+                ['label' => 'Asset types', 'value' => '42', 'detail' => '8 require custom fields'],
+                ['label' => 'Integrations', 'value' => '6', 'detail' => '2 need credentials'],
+            ],
+            'tableTitle' => 'Configuration Checklist',
+            'columns' => ['Area', 'Setting', 'State', 'Owner'],
+            'rows' => [
+                ['RBAC', 'LDAP group role map', 'Configured', 'Platform'],
+                ['Lifecycle', 'Retirement approvals', 'Draft', 'Operations'],
+                ['Fields', 'Optic serial required', 'Enabled', 'NetOps'],
+                ['Integrations', 'Cacti host sync', 'Planned', 'Plugin'],
+            ],
+            'sideTitle' => 'Security Review',
+            'sideItems' => [
+                ['label' => 'Local users', 'value' => 'Dev only'],
+                ['label' => 'LDAP bind', 'value' => 'Service account'],
+                ['label' => 'Write action', 'value' => 'asset.register'],
+            ],
+        ],
+    ];
+
     public function __construct(
         private readonly RegisterAssetHandler $registerAsset,
         private readonly ?UserDirectory $userDirectory,
@@ -263,7 +530,7 @@ final class AssetWebApp
         $navigation = $this->renderNavigation($path);
         $content = $path === '/assets/register'
             ? $this->renderRegistrationContent($screen, $successHtml, $errorHtml, $inputDescription)
-            : $this->renderScreenContent($screen);
+            : $this->renderScreenContent($path, $screen);
 
         return new Response(<<<HTML
             <!doctype html>
@@ -443,6 +710,13 @@ final class AssetWebApp
                   align-items: start;
                 }
 
+                .workspace-grid {
+                  display: grid;
+                  grid-template-columns: minmax(0, 1fr) 280px;
+                  gap: 18px;
+                  align-items: start;
+                }
+
                 .panel {
                   background: var(--surface);
                   border: 1px solid var(--line);
@@ -462,6 +736,125 @@ final class AssetWebApp
                   margin: 0;
                   font-size: 18px;
                   line-height: 1.3;
+                }
+
+                .toolbar {
+                  display: flex;
+                  flex-wrap: wrap;
+                  gap: 8px;
+                }
+
+                .secondary-action {
+                  display: inline-flex;
+                  align-items: center;
+                  justify-content: center;
+                  min-height: 34px;
+                  padding: 0 10px;
+                  border: 1px solid var(--line-strong);
+                  border-radius: 6px;
+                  background: #ffffff;
+                  color: var(--text);
+                  font-size: 14px;
+                  font-weight: 700;
+                }
+
+                .metric-grid {
+                  display: grid;
+                  grid-template-columns: repeat(4, minmax(0, 1fr));
+                  gap: 12px;
+                  margin-bottom: 18px;
+                }
+
+                .metric {
+                  min-height: 118px;
+                  padding: 14px;
+                  border: 1px solid var(--line);
+                  border-radius: 8px;
+                  background: var(--surface);
+                }
+
+                .metric-label {
+                  margin: 0 0 8px;
+                  color: var(--muted);
+                  font-size: 13px;
+                  font-weight: 750;
+                  text-transform: uppercase;
+                }
+
+                .metric-value {
+                  margin: 0;
+                  font-size: 26px;
+                  font-weight: 800;
+                  line-height: 1.1;
+                }
+
+                .metric-detail {
+                  margin: 8px 0 0;
+                  color: var(--muted);
+                  font-size: 13px;
+                }
+
+                .data-table-wrap {
+                  overflow-x: auto;
+                }
+
+                .data-table {
+                  width: 100%;
+                  min-width: 720px;
+                  border-collapse: collapse;
+                }
+
+                th,
+                td {
+                  padding: 11px 14px;
+                  border-bottom: 1px solid var(--line);
+                  text-align: left;
+                  vertical-align: top;
+                }
+
+                th {
+                  color: var(--muted);
+                  font-size: 13px;
+                  font-weight: 800;
+                  text-transform: uppercase;
+                }
+
+                td {
+                  font-size: 14px;
+                }
+
+                tbody tr:last-child td {
+                  border-bottom: 0;
+                }
+
+                .side-list {
+                  display: grid;
+                  gap: 0;
+                  margin: 0;
+                  padding: 6px 0;
+                  list-style: none;
+                }
+
+                .side-list li {
+                  display: grid;
+                  gap: 3px;
+                  padding: 12px 16px;
+                  border-bottom: 1px solid var(--line);
+                }
+
+                .side-list li:last-child {
+                  border-bottom: 0;
+                }
+
+                .side-label {
+                  color: var(--muted);
+                  font-size: 13px;
+                  font-weight: 750;
+                }
+
+                .side-value {
+                  font-size: 14px;
+                  font-weight: 650;
                 }
 
                 .screen-grid {
@@ -605,6 +998,11 @@ final class AssetWebApp
                   .screen-grid {
                     grid-template-columns: 1fr;
                   }
+
+                  .workspace-grid,
+                  .metric-grid {
+                    grid-template-columns: 1fr;
+                  }
                 }
 
                 @media (prefers-reduced-motion: reduce) {
@@ -706,18 +1104,127 @@ final class AssetWebApp
      *     items: list<array{title: string, body: string}>
      * } $screen
      */
-    private function renderScreenContent(array $screen): string
+    private function renderScreenContent(string $path, array $screen): string
     {
         $cards = $this->renderCards($screen['items']);
+        $workspace = self::WORKSPACES[$path];
+        $metrics = $this->renderMetrics($workspace['metrics']);
+        $actions = $this->renderActions($workspace['actions']);
+        $table = $this->renderTable($workspace['columns'], $workspace['rows']);
+        $sideItems = $this->renderSideItems($workspace['sideItems']);
+        $tableTitle = $this->escape($workspace['tableTitle']);
+        $sideTitle = $this->escape($workspace['sideTitle']);
 
         return <<<HTML
-            <section class="panel" aria-labelledby="screen-overview-title">
-              <div class="panel-header">
-                <h2 id="screen-overview-title">Screen Plan</h2>
+            {$metrics}
+            <div class="workspace-grid">
+              <div class="workspace">
+                <section class="panel" aria-labelledby="primary-work-title">
+                  <div class="panel-header">
+                    <h2 id="primary-work-title">{$tableTitle}</h2>
+                    <div class="toolbar" aria-label="Screen actions">
+                      {$actions}
+                    </div>
+                  </div>
+                  {$table}
+                </section>
+                <section class="panel" aria-labelledby="screen-capabilities-title">
+                  <div class="panel-header">
+                    <h2 id="screen-capabilities-title">Capabilities</h2>
+                  </div>
+                  {$cards}
+                </section>
               </div>
-              {$cards}
-            </section>
+              <aside class="panel" aria-labelledby="side-work-title">
+                <div class="panel-header">
+                  <h2 id="side-work-title">{$sideTitle}</h2>
+                </div>
+                {$sideItems}
+              </aside>
+            </div>
             HTML;
+    }
+
+    /**
+     * @param list<array{label: string, value: string, detail: string}> $metrics
+     */
+    private function renderMetrics(array $metrics): string
+    {
+        $items = '';
+
+        foreach ($metrics as $metric) {
+            $items .= sprintf(
+                '<article class="metric"><p class="metric-label">%s</p><p class="metric-value">%s</p><p class="metric-detail">%s</p></article>',
+                $this->escape($metric['label']),
+                $this->escape($metric['value']),
+                $this->escape($metric['detail']),
+            );
+        }
+
+        return sprintf('<section class="metric-grid" aria-label="Key metrics">%s</section>', $items);
+    }
+
+    /**
+     * @param list<string> $actions
+     */
+    private function renderActions(array $actions): string
+    {
+        $items = '';
+
+        foreach ($actions as $action) {
+            $items .= sprintf('<span class="secondary-action">%s</span>', $this->escape($action));
+        }
+
+        return $items;
+    }
+
+    /**
+     * @param list<string> $columns
+     * @param list<list<string>> $rows
+     */
+    private function renderTable(array $columns, array $rows): string
+    {
+        $head = '';
+
+        foreach ($columns as $column) {
+            $head .= sprintf('<th scope="col">%s</th>', $this->escape($column));
+        }
+
+        $body = '';
+
+        foreach ($rows as $row) {
+            $cells = '';
+
+            foreach ($row as $cell) {
+                $cells .= sprintf('<td>%s</td>', $this->escape($cell));
+            }
+
+            $body .= sprintf('<tr>%s</tr>', $cells);
+        }
+
+        return sprintf(
+            '<div class="data-table-wrap"><table class="data-table"><thead><tr>%s</tr></thead><tbody>%s</tbody></table></div>',
+            $head,
+            $body,
+        );
+    }
+
+    /**
+     * @param list<array{label: string, value: string}> $items
+     */
+    private function renderSideItems(array $items): string
+    {
+        $html = '';
+
+        foreach ($items as $item) {
+            $html .= sprintf(
+                '<li><span class="side-label">%s</span><span class="side-value">%s</span></li>',
+                $this->escape($item['label']),
+                $this->escape($item['value']),
+            );
+        }
+
+        return sprintf('<ul class="side-list">%s</ul>', $html);
     }
 
     /**

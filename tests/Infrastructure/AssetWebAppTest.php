@@ -55,26 +55,26 @@ final class AssetWebAppTest extends TestCase
     }
 
     /**
-     * @return iterable<string, array{0: string, 1: string}>
+     * @return iterable<string, array{0: string, 1: string, 2: string, 3: string}>
      */
     public static function screenProvider(): iterable
     {
-        yield 'dashboard' => ['/', 'Operations Overview'];
-        yield 'assets' => ['/assets', 'Asset Index'];
-        yield 'register' => ['/assets/register', 'Asset Registration'];
-        yield 'network' => ['/network', 'Network Inventory'];
-        yield 'locations' => ['/locations', 'Location Directory'];
-        yield 'custody' => ['/custody', 'Custody Queue'];
-        yield 'procurement' => ['/procurement', 'Procurement and Receiving'];
-        yield 'contracts' => ['/contracts', 'Contracts and Warranty'];
-        yield 'maintenance' => ['/maintenance', 'Maintenance Work'];
-        yield 'monitoring' => ['/monitoring', 'Monitoring Links'];
-        yield 'reports' => ['/reports', 'Report Library'];
-        yield 'admin' => ['/admin', 'Administration'];
+        yield 'dashboard' => ['/', 'Operations Overview', 'Attention Queue', 'Tracked assets'];
+        yield 'assets' => ['/assets', 'Asset Index', 'Asset Register', 'Routers'];
+        yield 'register' => ['/assets/register', 'Asset Registration', 'Full Registration Flow', 'Identity'];
+        yield 'network' => ['/network', 'Network Inventory', 'Topology Worklist', 'Interfaces'];
+        yield 'locations' => ['/locations', 'Location Directory', 'Location Directory', 'Sites'];
+        yield 'custody' => ['/custody', 'Custody Queue', 'Custody Transfers', 'Pending transfers'];
+        yield 'procurement' => ['/procurement', 'Procurement and Receiving', 'Receiving Queue', 'Open POs'];
+        yield 'contracts' => ['/contracts', 'Contracts and Warranty', 'Renewal Pipeline', 'Active contracts'];
+        yield 'maintenance' => ['/maintenance', 'Maintenance Work', 'Maintenance Work', 'Open work'];
+        yield 'monitoring' => ['/monitoring', 'Monitoring Links', 'Monitoring Exceptions', 'Linked hosts'];
+        yield 'reports' => ['/reports', 'Report Library', 'Report Library', 'Saved reports'];
+        yield 'admin' => ['/admin', 'Administration', 'Configuration Checklist', 'Roles'];
     }
 
     #[DataProvider('screenProvider')]
-    public function testItRendersApplicationScreens(string $path, string $title): void
+    public function testItRendersApplicationScreens(string $path, string $title, string $primaryWork, string $metric): void
     {
         $response = $this->app('screen-' . trim(str_replace('/', '-', $path), '-'))->handle(Request::create($path));
 
@@ -82,6 +82,22 @@ final class AssetWebAppTest extends TestCase
         self::assertStringContainsString(sprintf('<h1>%s</h1>', $title), (string) $response->getContent());
         self::assertStringContainsString('aria-label="Primary navigation"', (string) $response->getContent());
         self::assertStringContainsString(sprintf('href="%s" aria-current="page"', $path), (string) $response->getContent());
+        self::assertStringContainsString($primaryWork, (string) $response->getContent());
+        self::assertStringContainsString($metric, (string) $response->getContent());
+    }
+
+    public function testItRendersFleshedOutOperationalScreens(): void
+    {
+        $response = $this->app('fleshed-out')->handle(Request::create('/monitoring'));
+        $content = (string) $response->getContent();
+
+        self::assertSame(200, $response->getStatusCode());
+        self::assertStringContainsString('<section class="metric-grid" aria-label="Key metrics">', $content);
+        self::assertStringContainsString('<table class="data-table">', $content);
+        self::assertStringContainsString('Run Reconcile', $content);
+        self::assertStringContainsString('Hostname mismatch', $content);
+        self::assertStringContainsString('Reconcile Sources', $content);
+        self::assertStringNotContainsString('Screen Plan', $content);
     }
 
     public function testItNormalizesTrailingSlashesForScreens(): void
