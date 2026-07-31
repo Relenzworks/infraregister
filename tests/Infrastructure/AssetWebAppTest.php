@@ -358,6 +358,37 @@ final class AssetWebAppTest extends TestCase
         self::assertSame('Not Found', $response->getContent());
     }
 
+    public function testItLinksContractRowsToRenewalDetail(): void
+    {
+        $response = $this->app('contract-index-links')->handle(Request::create('/contracts'));
+        $content = (string) $response->getContent();
+
+        self::assertSame(200, $response->getStatusCode());
+        self::assertStringContainsString('<a href="/contracts?id=sup-3092">SUP-3092</a>', $content);
+        self::assertStringContainsString('<a href="/contracts?id=lease-884">LEASE-884</a>', $content);
+    }
+
+    public function testItRendersContractRenewalDetailFromTheContractsRoute(): void
+    {
+        $response = $this->app('contract-detail')->handle(Request::create('/contracts', 'GET', ['id' => 'sup-3092']));
+        $content = (string) $response->getContent();
+
+        self::assertSame(200, $response->getStatusCode());
+        self::assertStringContainsString('<h1>SUP-3092</h1>', $content);
+        self::assertStringContainsString('Contract Tabs', $content);
+        self::assertStringContainsString('Request Approval', $content);
+        self::assertStringContainsString('Confirm covered serials before renewal approval', $content);
+        self::assertStringContainsString('href="/contracts" aria-current="page"', $content);
+    }
+
+    public function testItReturnsNotFoundForUnknownContractRenewalIds(): void
+    {
+        $response = $this->app('unknown-contract-renewal')->handle(Request::create('/contracts', 'GET', ['id' => 'sup-9999']));
+
+        self::assertSame(404, $response->getStatusCode());
+        self::assertSame('Not Found', $response->getContent());
+    }
+
     public function testItRendersNonDefaultAssetStatusesOnTheAssetIndex(): void
     {
         $path = $this->storePath('asset-index-statuses');
