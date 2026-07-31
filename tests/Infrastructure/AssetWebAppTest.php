@@ -104,6 +104,7 @@ final class AssetWebAppTest extends TestCase
         self::assertStringContainsString(sprintf('<h1>%s</h1>', $title), (string) $response->getContent());
         self::assertStringContainsString('<span class="metadata">', (string) $response->getContent());
         self::assertStringNotContainsString('<span class="metadata">Inventory /', (string) $response->getContent());
+        self::assertStringContainsString('aria-label="Breadcrumb"', (string) $response->getContent());
         self::assertStringContainsString('aria-label="Primary navigation"', (string) $response->getContent());
         self::assertStringContainsString(sprintf('href="%s" aria-current="page"', $path), (string) $response->getContent());
         self::assertStringContainsString($primaryWork, (string) $response->getContent());
@@ -143,6 +144,18 @@ final class AssetWebAppTest extends TestCase
         self::assertStringContainsString('<p class="nav-section-title">Configuration</p>', $content);
         self::assertStringContainsString('href="/admin/integrations" aria-current="page"', $content);
         self::assertStringContainsString('<h1>Integrations</h1>', $content);
+    }
+
+    public function testItRendersBreadcrumbsForNestedScreens(): void
+    {
+        $response = $this->app('nested-breadcrumbs')->handle(Request::create('/admin/integrations'));
+        $content = (string) $response->getContent();
+
+        self::assertSame(200, $response->getStatusCode());
+        self::assertStringContainsString(
+            '<nav class="breadcrumbs" aria-label="Breadcrumb"><ol><li><a href="/">Dashboard</a></li><li><a href="/admin">Admin</a></li><li aria-current="page">Integrations</li></ol></nav>',
+            $content,
+        );
     }
 
     public function testItRegistersAnAssetFromPostData(): void
@@ -199,6 +212,10 @@ final class AssetWebAppTest extends TestCase
         self::assertStringContainsString('<title>Detail Router 01 - Assets - InfraRegister</title>', $content);
         self::assertStringContainsString('<h1>Detail Router 01</h1>', $content);
         self::assertStringContainsString('<span class="metadata">Inventory / In service</span>', $content);
+        self::assertStringContainsString(
+            '<nav class="breadcrumbs" aria-label="Breadcrumb"><ol><li><a href="/">Dashboard</a></li><li><a href="/assets">Assets</a></li><li aria-current="page">Detail Router 01</li></ol></nav>',
+            $content,
+        );
         self::assertStringContainsString('Asset Tabs', $content);
         self::assertStringContainsString(
             '<a href="#asset-summary-title" aria-current="location"><span class="side-label">Summary</span><span class="side-value">Identity and lifecycle</span></a>',
