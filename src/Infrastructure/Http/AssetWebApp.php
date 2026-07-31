@@ -2219,12 +2219,26 @@ final class AssetWebApp
                   border-right: 1px solid var(--line);
                 }
 
+                .nav-section-list,
                 .nav-list {
                   display: grid;
                   gap: 4px;
                   margin: 0;
                   padding: 0;
                   list-style: none;
+                }
+
+                .nav-section-list {
+                  gap: 14px;
+                }
+
+                .nav-section-title {
+                  margin: 0 0 5px;
+                  padding: 0 10px;
+                  color: var(--muted);
+                  font-size: 12px;
+                  font-weight: 800;
+                  text-transform: uppercase;
                 }
 
                 .nav-link {
@@ -2584,9 +2598,18 @@ final class AssetWebApp
                     border-bottom: 1px solid var(--line);
                   }
 
-                  .nav-list {
+                  .nav-section-list {
                     grid-auto-flow: column;
                     grid-auto-columns: max-content;
+                    align-items: start;
+                  }
+
+                  .nav-section-title {
+                    white-space: nowrap;
+                  }
+
+                  .nav-list {
+                    grid-auto-flow: row;
                   }
 
                   main {
@@ -4253,11 +4276,11 @@ final class AssetWebApp
 
     private function renderNavigation(string $currentPath): string
     {
-        $items = '';
+        $sections = [];
 
         foreach (self::SCREENS as $path => $screen) {
             $current = $path === $currentPath ? ' aria-current="page"' : '';
-            $items .= sprintf(
+            $sections[$screen['section']] = ($sections[$screen['section']] ?? '') . sprintf(
                 '<li><a class="nav-link" href="%s"%s>%s</a></li>',
                 $this->escape($path),
                 $current,
@@ -4265,7 +4288,17 @@ final class AssetWebApp
             );
         }
 
-        return sprintf('<ul class="nav-list">%s</ul>', $items);
+        $sectionItems = '';
+
+        foreach ($sections as $section => $items) {
+            $sectionItems .= sprintf(
+                '<li class="nav-section"><p class="nav-section-title">%s</p><ul class="nav-list">%s</ul></li>',
+                $this->escape($section),
+                $items,
+            );
+        }
+
+        return sprintf('<ul class="nav-section-list">%s</ul>', $sectionItems);
     }
 
     private function normalizePath(string $path): string

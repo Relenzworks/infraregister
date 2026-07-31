@@ -26,6 +26,8 @@ final class AssetWebAppTest extends TestCase
         self::assertStringContainsString('<main id="content" tabindex="-1">', (string) $response->getContent());
         self::assertStringContainsString('<section class="panel" aria-labelledby="registration-title">', (string) $response->getContent());
         self::assertStringContainsString('<nav class="sidebar" aria-label="Primary navigation">', (string) $response->getContent());
+        self::assertStringContainsString('<ul class="nav-section-list">', (string) $response->getContent());
+        self::assertStringContainsString('<p class="nav-section-title">Inventory</p>', (string) $response->getContent());
         self::assertStringContainsString('<a class="nav-link" href="/assets"', (string) $response->getContent());
         self::assertStringContainsString('<a class="button-link" href="/assets/register">Register Asset</a>', (string) $response->getContent());
         self::assertStringNotContainsString('global-search', (string) $response->getContent());
@@ -130,6 +132,17 @@ final class AssetWebAppTest extends TestCase
         self::assertSame(200, $response->getStatusCode());
         self::assertStringContainsString('<h1>Asset Index</h1>', (string) $response->getContent());
         self::assertStringContainsString('href="/assets" aria-current="page"', (string) $response->getContent());
+    }
+
+    public function testItGroupsNavigationBySectionForNestedScreens(): void
+    {
+        $response = $this->app('sectioned-nav')->handle(Request::create('/admin/integrations'));
+        $content = (string) $response->getContent();
+
+        self::assertSame(200, $response->getStatusCode());
+        self::assertStringContainsString('<p class="nav-section-title">Configuration</p>', $content);
+        self::assertStringContainsString('href="/admin/integrations" aria-current="page"', $content);
+        self::assertStringContainsString('<h1>Integrations</h1>', $content);
     }
 
     public function testItRegistersAnAssetFromPostData(): void
