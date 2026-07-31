@@ -482,6 +482,37 @@ final class AssetWebAppTest extends TestCase
         self::assertSame('Not Found', $response->getContent());
     }
 
+    public function testItLinksNetworkRowsToTopologyDetail(): void
+    {
+        $response = $this->app('network-index-links')->handle(Request::create('/network'));
+        $content = (string) $response->getContent();
+
+        self::assertSame(200, $response->getStatusCode());
+        self::assertStringContainsString('<a href="/network?id=core-atl-01-et-0-0-3">core-atl-01</a>', $content);
+        self::assertStringContainsString('<a href="/network?id=cpe-rno-144-ge-0-0-0">cpe-rno-144</a>', $content);
+    }
+
+    public function testItRendersNetworkSignalDetailFromTheNetworkRoute(): void
+    {
+        $response = $this->app('network-detail')->handle(Request::create('/network', 'GET', ['id' => 'core-atl-01-et-0-0-3']));
+        $content = (string) $response->getContent();
+
+        self::assertSame(200, $response->getStatusCode());
+        self::assertStringContainsString('<h1>core-atl-01</h1>', $content);
+        self::assertStringContainsString('Network Tabs', $content);
+        self::assertStringContainsString('Attach Graph', $content);
+        self::assertStringContainsString('Create or link peer asset before topology approval', $content);
+        self::assertStringContainsString('href="/network" aria-current="page"', $content);
+    }
+
+    public function testItReturnsNotFoundForUnknownNetworkSignalIds(): void
+    {
+        $response = $this->app('unknown-network-signal')->handle(Request::create('/network', 'GET', ['id' => 'missing-signal']));
+
+        self::assertSame(404, $response->getStatusCode());
+        self::assertSame('Not Found', $response->getContent());
+    }
+
     public function testItRendersNonDefaultAssetStatusesOnTheAssetIndex(): void
     {
         $path = $this->storePath('asset-index-statuses');

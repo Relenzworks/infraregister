@@ -967,6 +967,66 @@ final class AssetWebApp
         ],
     ];
 
+    /**
+     * @var array<string, array{
+     *     device: string,
+     *     interface: string,
+     *     peer: string,
+     *     signal: string,
+     *     speed: string,
+     *     media: string,
+     *     circuit: string,
+     *     owner: string,
+     *     next: string
+     * }>
+     */
+    private const array NETWORK_SIGNALS = [
+        'core-atl-01-et-0-0-3' => [
+            'device' => 'core-atl-01',
+            'interface' => 'et-0/0/3',
+            'peer' => 'agg-atl-04',
+            'signal' => 'Peer asset missing',
+            'speed' => '100G',
+            'media' => 'LR4 optic',
+            'circuit' => 'Internal backbone',
+            'owner' => 'NetOps',
+            'next' => 'Create or link peer asset before topology approval',
+        ],
+        'agg-den-03-xe-1-1-0' => [
+            'device' => 'agg-den-03',
+            'interface' => 'xe-1/1/0',
+            'peer' => 'carrier handoff',
+            'signal' => 'Circuit pending',
+            'speed' => '10G',
+            'media' => 'Carrier NNI',
+            'circuit' => 'Zayo DEN-1842',
+            'owner' => 'Regional Ops',
+            'next' => 'Confirm carrier turn-up date',
+        ],
+        'edge-sjc-02-et-0-0-7' => [
+            'device' => 'edge-sjc-02',
+            'interface' => 'et-0/0/7',
+            'peer' => 'core-sjc-01',
+            'signal' => 'Optic serial mismatch',
+            'speed' => '100G',
+            'media' => 'SR4 optic',
+            'circuit' => 'SJC fabric',
+            'owner' => 'NetOps',
+            'next' => 'Validate optic serial against physical audit',
+        ],
+        'cpe-rno-144-ge-0-0-0' => [
+            'device' => 'cpe-rno-144',
+            'interface' => 'ge-0/0/0',
+            'peer' => 'customer access',
+            'signal' => 'No Cacti graph',
+            'speed' => '1G',
+            'media' => 'Copper',
+            'circuit' => 'Customer access',
+            'owner' => 'Field Ops',
+            'next' => 'Attach Cacti graph template after install validation',
+        ],
+    ];
+
     public function __construct(
         private readonly RegisterAssetHandler $registerAsset,
         private readonly AssetRepository $assetRepository,
@@ -1065,6 +1125,7 @@ final class AssetWebApp
                 && $path !== '/reports'
                 && $path !== '/maintenance'
                 && $path !== '/admin'
+                && $path !== '/network'
             )
             || !$request->query->has('id')
         ) {
@@ -1113,6 +1174,10 @@ final class AssetWebApp
             return $this->render($path, adminConfigurationId: $id);
         }
 
+        if ($path === '/network') {
+            return $this->render($path, networkSignalId: $id);
+        }
+
         try {
             return $this->render($path, detailAssetId: AssetId::fromString($id));
         } catch (InvalidArgumentException) {
@@ -1146,6 +1211,7 @@ final class AssetWebApp
         ?string $savedReportId = null,
         ?string $maintenanceWorkId = null,
         ?string $adminConfigurationId = null,
+        ?string $networkSignalId = null,
     ): Response {
         $screen = self::SCREENS[$path];
         $detailAsset = $detailAssetId === null ? null : $this->assetRepository->get($detailAssetId);
@@ -1158,6 +1224,7 @@ final class AssetWebApp
         $savedReport = $savedReportId === null ? null : (self::SAVED_REPORTS[$savedReportId] ?? null);
         $maintenanceWork = $maintenanceWorkId === null ? null : (self::MAINTENANCE_WORK[$maintenanceWorkId] ?? null);
         $adminConfiguration = $adminConfigurationId === null ? null : (self::ADMIN_CONFIGURATIONS[$adminConfigurationId] ?? null);
+        $networkSignal = $networkSignalId === null ? null : (self::NETWORK_SIGNALS[$networkSignalId] ?? null);
 
         if ($detailAssetId !== null && $detailAsset === null) {
             return new Response('Not Found', Response::HTTP_NOT_FOUND);
@@ -1196,6 +1263,10 @@ final class AssetWebApp
         }
 
         if ($adminConfigurationId !== null && $adminConfiguration === null) {
+            return new Response('Not Found', Response::HTTP_NOT_FOUND);
+        }
+
+        if ($networkSignalId !== null && $networkSignal === null) {
             return new Response('Not Found', Response::HTTP_NOT_FOUND);
         }
 
@@ -1299,6 +1370,16 @@ final class AssetWebApp
             ];
         }
 
+        if ($networkSignal !== null) {
+            $screen = [
+                'label' => 'Network',
+                'section' => 'Infrastructure',
+                'title' => $networkSignal['device'],
+                'summary' => sprintf('%s on %s peers with %s and needs %s.', $networkSignal['interface'], $networkSignal['device'], $networkSignal['peer'], strtolower($networkSignal['signal'])),
+                'items' => [],
+            ];
+        }
+
         $successHtml = $success === null ? '' : sprintf(
             '<p class="notice" role="status">%s</p>',
             $this->escape($success),
@@ -1322,6 +1403,7 @@ final class AssetWebApp
             $savedReport !== null => $this->renderSavedReportDetailContent($savedReport),
             $maintenanceWork !== null => $this->renderMaintenanceWorkDetailContent($maintenanceWork),
             $adminConfiguration !== null => $this->renderAdminConfigurationDetailContent($adminConfiguration),
+            $networkSignal !== null => $this->renderNetworkSignalDetailContent($networkSignal),
             $path === '/assets/register' => $this->renderRegistrationContent($screen, $successHtml, $errorHtml, $inputDescription),
             default => $this->renderScreenContent($path, $screen),
         };
@@ -1845,6 +1927,74 @@ final class AssetWebApp
             </body>
             </html>
             HTML, $status);
+    }
+
+    /**
+     * @param array{device: string, interface: string, peer: string, signal: string, speed: string, media: string, circuit: string, owner: string, next: string} $signal
+     */
+    private function renderNetworkSignalDetailContent(array $signal): string
+    {
+        $summary = $this->renderTable(
+            ['Field', 'Value'],
+            [
+                ['Device', $signal['device']],
+                ['Interface', $signal['interface']],
+                ['Peer', $signal['peer']],
+                ['Signal', $signal['signal']],
+                ['Speed', $signal['speed']],
+                ['Media', $signal['media']],
+                ['Circuit', $signal['circuit']],
+                ['Owner', $signal['owner']],
+                ['Next Step', $signal['next']],
+            ],
+        );
+        $metrics = $this->renderMetrics([
+            ['label' => 'Signal', 'value' => $signal['signal'], 'detail' => 'Topology issue'],
+            ['label' => 'Speed', 'value' => $signal['speed'], 'detail' => 'Interface speed'],
+            ['label' => 'Media', 'value' => $signal['media'], 'detail' => 'Physical layer'],
+            ['label' => 'Owner', 'value' => $signal['owner'], 'detail' => 'Resolver'],
+        ]);
+        $tabs = $this->renderSideItems([
+            ['label' => 'Summary', 'value' => 'Device, interface, and peer'],
+            ['label' => 'Layer 1', 'value' => 'Speed, media, optic, and circuit'],
+            ['label' => 'IPAM', 'value' => 'Prefix, VRF, and assignment context'],
+            ['label' => 'Monitoring', 'value' => 'Cacti host and graph links'],
+            ['label' => 'Audit', 'value' => 'Topology evidence history'],
+        ]);
+        $actions = $this->renderActions(['Reconcile Peers', 'Link Asset', 'Reserve Prefix', 'Attach Graph']);
+
+        return <<<HTML
+            {$metrics}
+            <div class="workspace-grid">
+              <div class="workspace">
+                <section class="panel" aria-labelledby="network-summary-title">
+                  <div class="panel-header">
+                    <h2 id="network-summary-title">Summary</h2>
+                    <div class="toolbar" aria-label="Network actions">
+                      {$actions}
+                    </div>
+                  </div>
+                  {$summary}
+                </section>
+                <section class="panel" aria-labelledby="network-work-title">
+                  <div class="panel-header">
+                    <h2 id="network-work-title">Topology Work</h2>
+                  </div>
+                  <ul class="side-list">
+                    <li><span class="side-label">Identity</span><span class="side-value">Reconcile device, interface, peer asset, circuit, and physical media.</span></li>
+                    <li><span class="side-label">IPAM</span><span class="side-value">Keep prefixes, VRFs, reservations, and assignments attached to the owning asset.</span></li>
+                    <li><span class="side-label">Monitoring</span><span class="side-value">Link Cacti host and graph evidence after topology validation.</span></li>
+                  </ul>
+                </section>
+              </div>
+              <aside class="panel" aria-labelledby="network-tabs-title">
+                <div class="panel-header">
+                  <h2 id="network-tabs-title">Network Tabs</h2>
+                </div>
+                {$tabs}
+              </aside>
+            </div>
+            HTML;
     }
 
     /**
@@ -2661,6 +2811,10 @@ final class AssetWebApp
             return $this->adminIndexWorkspace($workspace);
         }
 
+        if ($path === '/network') {
+            return $this->networkIndexWorkspace($workspace);
+        }
+
         $assets = $this->assetRepository->all();
 
         if ($assets === []) {
@@ -3063,6 +3217,43 @@ final class AssetWebApp
                 $configuration['setting'],
                 $configuration['state'],
                 $configuration['owner'],
+            ];
+        }
+
+        return $workspace;
+    }
+
+    /**
+     * @param array{
+     *     actions: list<string>,
+     *     metrics: list<array{label: string, value: string, detail: string}>,
+     *     tableTitle: string,
+     *     columns: list<string>,
+     *     rows: list<list<string>>,
+     *     sideTitle: string,
+     *     sideItems: list<array{label: string, value: string}>
+     * } $workspace
+     *
+     * @return array{
+     *     actions: list<string>,
+     *     metrics: list<array{label: string, value: string, detail: string}>,
+     *     tableTitle: string,
+     *     columns: list<string>,
+     *     rows: list<list<string>>,
+     *     sideTitle: string,
+     *     sideItems: list<array{label: string, value: string}>
+     * }
+     */
+    private function networkIndexWorkspace(array $workspace): array
+    {
+        $workspace['rows'] = [];
+
+        foreach (self::NETWORK_SIGNALS as $id => $signal) {
+            $workspace['rows'][] = [
+                $this->internalLinkCell('/network?id=' . $id, $signal['device']),
+                $signal['interface'],
+                $signal['peer'],
+                $signal['signal'],
             ];
         }
 
