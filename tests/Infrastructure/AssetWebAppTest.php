@@ -513,6 +513,37 @@ final class AssetWebAppTest extends TestCase
         self::assertSame('Not Found', $response->getContent());
     }
 
+    public function testItLinksDashboardRowsToAttentionDetail(): void
+    {
+        $response = $this->app('dashboard-attention-links')->handle(Request::create('/'));
+        $content = (string) $response->getContent();
+
+        self::assertSame(200, $response->getStatusCode());
+        self::assertStringContainsString('<a href="/?id=core-router-serial-mismatch-sjc1">Core router serial mismatch at SJC1</a>', $content);
+        self::assertStringContainsString('<a href="/?id=po-10482-duplicate-serials">Receiving batch PO-10482 has two duplicate serials</a>', $content);
+    }
+
+    public function testItRendersAttentionDetailFromTheDashboardRoute(): void
+    {
+        $response = $this->app('dashboard-attention-detail')->handle(Request::create('/', 'GET', ['id' => 'core-router-serial-mismatch-sjc1']));
+        $content = (string) $response->getContent();
+
+        self::assertSame(200, $response->getStatusCode());
+        self::assertStringContainsString('<h1>Core router serial mismatch at SJC1</h1>', $content);
+        self::assertStringContainsString('Attention Tabs', $content);
+        self::assertStringContainsString('Resolve Item', $content);
+        self::assertStringContainsString('Confirm physical serial and update the asset record', $content);
+        self::assertStringContainsString('href="/" aria-current="page"', $content);
+    }
+
+    public function testItReturnsNotFoundForUnknownAttentionIds(): void
+    {
+        $response = $this->app('unknown-attention-item')->handle(Request::create('/', 'GET', ['id' => 'missing-attention']));
+
+        self::assertSame(404, $response->getStatusCode());
+        self::assertSame('Not Found', $response->getContent());
+    }
+
     public function testItRendersNonDefaultAssetStatusesOnTheAssetIndex(): void
     {
         $path = $this->storePath('asset-index-statuses');
