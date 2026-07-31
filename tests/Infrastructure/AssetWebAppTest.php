@@ -86,6 +86,7 @@ final class AssetWebAppTest extends TestCase
         self::assertStringContainsString(sprintf('href="%s" aria-current="page"', $path), (string) $response->getContent());
         self::assertStringContainsString($primaryWork, (string) $response->getContent());
         self::assertStringContainsString($metric, (string) $response->getContent());
+        self::assertStringNotContainsString('class="back-link"', (string) $response->getContent());
     }
 
     public function testItRendersFleshedOutOperationalScreens(): void
@@ -167,6 +168,7 @@ final class AssetWebAppTest extends TestCase
         self::assertStringContainsString('Summary', $content);
         self::assertStringContainsString('Link Monitoring', $content);
         self::assertStringContainsString(sprintf('Record identifier: %s', $id->value), $content);
+        self::assertStringContainsString('<a class="back-link" href="/assets">Back to Assets</a>', $content);
         self::assertStringContainsString('href="/assets" aria-current="page"', $content);
     }
 
@@ -533,6 +535,7 @@ final class AssetWebAppTest extends TestCase
         self::assertStringContainsString('Attention Tabs', $content);
         self::assertStringContainsString('Resolve Item', $content);
         self::assertStringContainsString('Confirm physical serial and update the asset record', $content);
+        self::assertStringContainsString('<a class="back-link" href="/">Back to Dashboard</a>', $content);
         self::assertStringContainsString('href="/" aria-current="page"', $content);
     }
 
