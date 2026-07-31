@@ -37,3 +37,32 @@ docker run --rm -e INFRAREGISTER_WRITE_AUTH=infraregister:local-dev -p 127.0.0.1
 ```
 
 The web entrypoint is a Phase 1 local development surface. Registration writes require `INFRAREGISTER_WRITE_AUTH` Basic Auth credentials and the documented Docker command binds the published port to loopback.
+
+## Authentication and Authorization
+
+InfraRegister uses Symfony Security components for role checks and Symfony LDAP for directory-backed authentication.
+
+Local development can use either compatibility credentials:
+
+```bash
+INFRAREGISTER_WRITE_AUTH=infraregister:local-dev
+```
+
+or explicit local RBAC users:
+
+```bash
+INFRAREGISTER_LOCAL_USERS='alice:secret=viewer;ops:secret=operator;admin:secret=admin'
+```
+
+LDAP can be enabled with:
+
+```bash
+INFRAREGISTER_LDAP_URI='ldap://directory.example'
+INFRAREGISTER_LDAP_BASE_DN='ou=people,dc=example,dc=com'
+INFRAREGISTER_LDAP_USER_FILTER='(uid={username})'
+INFRAREGISTER_LDAP_BIND_DN='cn=infraregister,ou=services,dc=example,dc=com'
+INFRAREGISTER_LDAP_BIND_PASSWORD='service-password'
+INFRAREGISTER_LDAP_GROUP_ROLE_MAP='InfraRegister Admins=admin;InfraRegister Operators=operator'
+```
+
+Supported roles are `viewer`, `operator`, `asset-manager`, and `admin`. Asset registration requires `operator`, `asset-manager`, or `admin`.

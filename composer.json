@@ -8,6 +8,8 @@
     "symfony/console": "^7.4",
     "symfony/filesystem": "^7.4",
     "symfony/http-foundation": "^7.4",
+    "symfony/ldap": "^7.4",
+    "symfony/security-core": "^7.4",
     "symfony/uid": "^6.4 || ^7.0",
     "symfony/validator": "^6.4 || ^7.0"
   },

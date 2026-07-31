@@ -9,6 +9,7 @@ RUN apt-get update \
         git \
         php8.3-cli \
         php8.3-curl \
+        php8.3-ldap \
         php8.3-mbstring \
         php8.3-xml \
         php8.3-zip \

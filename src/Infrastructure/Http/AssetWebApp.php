@@ -7,8 +7,12 @@ namespace RelenzWorks\InfraRegister\Infrastructure\Http;
 use InvalidArgumentException;
 use RelenzWorks\InfraRegister\Application\Asset\RegisterAsset;
 use RelenzWorks\InfraRegister\Application\Asset\RegisterAssetHandler;
+use RelenzWorks\InfraRegister\Application\Security\AccessPolicy;
+use RelenzWorks\InfraRegister\Domain\Security\Permission;
 use RelenzWorks\InfraRegister\Infrastructure\Persistence\AssetStoreUnavailable;
 use RelenzWorks\InfraRegister\Infrastructure\Persistence\JsonAssetRepository;
+use RelenzWorks\InfraRegister\Infrastructure\Security\LocalUserDirectory;
+use RelenzWorks\InfraRegister\Port\UserDirectory;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -160,12 +164,21 @@ final class AssetWebApp
 
     public function __construct(
         private readonly RegisterAssetHandler $registerAsset,
-        private readonly ?string $writeAuth,
+        private readonly ?UserDirectory $userDirectory,
+        private readonly AccessPolicy $accessPolicy = new AccessPolicy(),
     ) {}
 
     public static function fromStore(string $path, ?string $basePath, ?string $writeAuth = null): self
     {
-        return new self(new RegisterAssetHandler(new JsonAssetRepository($path, $basePath)), $writeAuth);
+        return new self(
+            new RegisterAssetHandler(new JsonAssetRepository($path, $basePath)),
+            LocalUserDirectory::fromLegacyWriteAuth($writeAuth),
+        );
+    }
+
+    public function withUserDirectory(?UserDirectory $userDirectory): self
+    {
+        return new self($this->registerAsset, $userDirectory, $this->accessPolicy);
     }
 
     public function handle(Request $request): Response
@@ -195,7 +208,7 @@ final class AssetWebApp
 
     private function register(Request $request): Response
     {
-        if (!$this->canWrite($request)) {
+        if (!$this->isGranted($request, Permission::AssetRegister)) {
             return $this->writeDeniedResponse();
         }
 
@@ -756,9 +769,9 @@ final class AssetWebApp
         return $path === '/' || $path === '/assets/register' ? 'GET, POST' : 'GET';
     }
 
-    private function canWrite(Request $request): bool
+    private function isGranted(Request $request, Permission $permission): bool
     {
-        if (!$this->isWriteAuthConfigured()) {
+        if ($this->userDirectory === null) {
             return false;
         }
 
@@ -769,27 +782,24 @@ final class AssetWebApp
             return false;
         }
 
-        return hash_equals($this->writeAuth ?? '', $requestUser . ':' . $requestPassword);
+        $user = $this->userDirectory->authenticate($requestUser, $requestPassword);
+
+        return $user !== null && $this->accessPolicy->allows($user, $permission);
     }
 
     private function writeDeniedResponse(): Response
     {
-        if (!$this->isWriteAuthConfigured()) {
-            error_log('InfraRegister rejected asset registration because write auth is not configured.');
+        if ($this->userDirectory === null) {
+            error_log('InfraRegister rejected asset registration because no user directory is configured.');
 
-            return new Response('Asset registration requires configured write protection.', Response::HTTP_FORBIDDEN);
+            return new Response('Asset registration requires configured authentication.', Response::HTTP_FORBIDDEN);
         }
 
-        error_log('InfraRegister rejected asset registration because write authentication failed.');
+        error_log('InfraRegister rejected asset registration because authentication or authorization failed.');
 
         return new Response('Authentication Required', Response::HTTP_UNAUTHORIZED, [
             'WWW-Authenticate' => 'Basic realm="InfraRegister"',
         ]);
-    }
-
-    private function isWriteAuthConfigured(): bool
-    {
-        return $this->writeAuth !== null && str_contains($this->writeAuth, ':');
     }
 
     private function hasSameOrigin(Request $request): bool

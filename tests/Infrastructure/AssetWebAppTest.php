@@ -6,7 +6,11 @@ namespace RelenzWorks\InfraRegister\Tests\Infrastructure;
 
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
+use RelenzWorks\InfraRegister\Application\Asset\RegisterAssetHandler;
+use RelenzWorks\InfraRegister\Domain\Security\Role;
 use RelenzWorks\InfraRegister\Infrastructure\Http\AssetWebApp;
+use RelenzWorks\InfraRegister\Infrastructure\Persistence\JsonAssetRepository;
+use RelenzWorks\InfraRegister\Infrastructure\Security\LocalUserDirectory;
 use Symfony\Component\HttpFoundation\Request;
 
 final class AssetWebAppTest extends TestCase
@@ -36,6 +40,18 @@ final class AssetWebAppTest extends TestCase
 
         self::assertSame(200, $response->getStatusCode());
         self::assertStringContainsString('<h1>Asset Index</h1>', (string) $response->getContent());
+    }
+
+    public function testItCanInjectAUserDirectory(): void
+    {
+        $path = $this->storePath('injected-directory');
+        $app = AssetWebApp::fromStore($path, dirname($path))
+            ->withUserDirectory(LocalUserDirectory::fromLegacyWriteAuth('writer:secret'));
+
+        $response = $app->handle($this->postRegister(['name' => 'Injected Directory Router']));
+
+        self::assertSame(200, $response->getStatusCode());
+        self::assertStringContainsString('Registered asset Injected Directory Router.', (string) $response->getContent());
     }
 
     /**
@@ -199,7 +215,33 @@ final class AssetWebAppTest extends TestCase
         ]));
 
         self::assertSame(403, $response->getStatusCode());
-        self::assertSame('Asset registration requires configured write protection.', $response->getContent());
+        self::assertSame('Asset registration requires configured authentication.', $response->getContent());
+        self::assertFileDoesNotExist($path);
+    }
+
+    public function testItRejectsAuthenticatedUsersWithoutRegisterPermission(): void
+    {
+        $path = $this->storePath('viewer-write');
+        $app = new AssetWebApp(
+            new RegisterAssetHandler(new JsonAssetRepository($path, dirname($path))),
+            new LocalUserDirectory([
+                'viewer' => [
+                    'password' => 'secret',
+                    'roles' => [Role::Viewer],
+                ],
+            ]),
+        );
+
+        $response = $app->handle(Request::create('/assets/register', 'POST', [
+            'name' => 'Viewer Router',
+        ], [], [], [
+            'PHP_AUTH_USER' => 'viewer',
+            'PHP_AUTH_PW' => 'secret',
+            'HTTP_ORIGIN' => 'http://localhost',
+        ]));
+
+        self::assertSame(401, $response->getStatusCode());
+        self::assertSame('Authentication Required', $response->getContent());
         self::assertFileDoesNotExist($path);
     }
 
@@ -236,7 +278,7 @@ final class AssetWebAppTest extends TestCase
         ]));
 
         self::assertSame(403, $response->getStatusCode());
-        self::assertSame('Asset registration requires configured write protection.', $response->getContent());
+        self::assertSame('Asset registration requires configured authentication.', $response->getContent());
         self::assertFileDoesNotExist($path);
     }
 
