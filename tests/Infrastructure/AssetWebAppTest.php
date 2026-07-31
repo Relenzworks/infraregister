@@ -23,7 +23,7 @@ final class AssetWebAppTest extends TestCase
         self::assertSame(200, $response->getStatusCode());
         self::assertStringContainsString('<a class="skip-link" href="#content">Skip to content</a>', (string) $response->getContent());
         self::assertStringContainsString('<header class="app-header">', (string) $response->getContent());
-        self::assertStringContainsString('<main id="content">', (string) $response->getContent());
+        self::assertStringContainsString('<main id="content" tabindex="-1">', (string) $response->getContent());
         self::assertStringContainsString('<section class="panel" aria-labelledby="registration-title">', (string) $response->getContent());
         self::assertStringContainsString('<nav class="sidebar" aria-label="Primary navigation">', (string) $response->getContent());
         self::assertStringContainsString('<a class="nav-link" href="/assets"', (string) $response->getContent());

@@ -2068,7 +2068,7 @@ final class AssetWebApp
                 <nav class="sidebar" aria-label="Primary navigation">
                   {$navigation}
                 </nav>
-                <main id="content">
+                <main id="content" tabindex="-1">
                   <div class="page-title">
                     <h1>{$this->escape($screen['title'])}</h1>
                     <span class="metadata">{$this->escape($metadata)}</span>
