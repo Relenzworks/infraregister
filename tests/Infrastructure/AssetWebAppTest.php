@@ -30,7 +30,8 @@ final class AssetWebAppTest extends TestCase
         self::assertStringContainsString('<p class="nav-section-title">Inventory</p>', (string) $response->getContent());
         self::assertStringContainsString('<a class="nav-link" href="/assets"', (string) $response->getContent());
         self::assertStringContainsString('<a class="button-link" href="/assets/register">Register Asset</a>', (string) $response->getContent());
-        self::assertStringNotContainsString('global-search', (string) $response->getContent());
+        self::assertStringContainsString('<form class="global-search" role="search" method="get" action="/search">', (string) $response->getContent());
+        self::assertStringContainsString('<input type="search" name="q" aria-label="Global search" placeholder="Search assets, hosts, IPs">', (string) $response->getContent());
         self::assertStringContainsString('<form method="post" action="/assets/register" novalidate>', (string) $response->getContent());
         self::assertStringContainsString('aria-describedby="asset-name-requirements"', (string) $response->getContent());
         self::assertStringContainsString('Register Asset', (string) $response->getContent());
@@ -63,6 +64,7 @@ final class AssetWebAppTest extends TestCase
     public static function screenProvider(): iterable
     {
         yield 'dashboard' => ['/', 'Operations Overview', 'Attention Queue', 'Tracked assets'];
+        yield 'search' => ['/search', 'Global Search', 'Grouped Search Results', 'Search targets'];
         yield 'assets' => ['/assets', 'Asset Index', 'Asset Register', 'Routers'];
         yield 'register' => ['/assets/register', 'Asset Registration', 'Full Registration Flow', 'Identity'];
         yield 'saved views' => ['/assets/views', 'Saved Asset Views', 'Saved View Library', 'Saved views'];
