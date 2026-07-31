@@ -171,7 +171,10 @@ final class AssetWebAppTest extends TestCase
         self::assertStringContainsString('<span class="metadata">Inventory / In service</span>', $content);
         self::assertStringContainsString('Asset Tabs', $content);
         self::assertStringContainsString('Summary', $content);
-        self::assertStringContainsString('Link Monitoring', $content);
+        self::assertStringContainsString(
+            '<span class="secondary-action" aria-disabled="true">Link Monitoring</span>',
+            $content,
+        );
         self::assertStringContainsString(sprintf('Record identifier: %s', $id->value), $content);
         self::assertStringContainsString('<a class="back-link" href="/assets">Back to Assets</a>', $content);
         self::assertStringContainsString('href="/assets" aria-current="page"', $content);

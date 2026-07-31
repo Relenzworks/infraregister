@@ -3554,7 +3554,7 @@ final class AssetWebApp
         $items = '';
 
         foreach ($actions as $action) {
-            $items .= sprintf('<span class="secondary-action">%s</span>', $this->escape($action));
+            $items .= sprintf('<span class="secondary-action" aria-disabled="true">%s</span>', $this->escape($action));
         }
 
         return $items;
