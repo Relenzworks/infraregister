@@ -434,6 +434,56 @@ final class AssetWebApp
         ],
     ];
 
+    /**
+     * @var array<string, array{
+     *     name: string,
+     *     type: string,
+     *     occupancy: string,
+     *     work: string,
+     *     address: string,
+     *     access: string,
+     *     power: string
+     * }>
+     */
+    private const array LOCATIONS = [
+        'sjc1-row-c-rack-14' => [
+            'name' => 'SJC1 Row C Rack 14',
+            'type' => 'Rack',
+            'occupancy' => '38/42 RU',
+            'work' => 'Power audit',
+            'address' => 'San Jose, CA',
+            'access' => 'Badge and cage escort',
+            'power' => 'A/B feeds monitored',
+        ],
+        'den2-cage-b' => [
+            'name' => 'DEN2 Cage B',
+            'type' => 'Site',
+            'occupancy' => '71% used',
+            'work' => 'Access note update',
+            'address' => 'Denver, CO',
+            'access' => 'NOC approval required',
+            'power' => 'Utility and generator',
+        ],
+        'rno-warehouse-bin-7' => [
+            'name' => 'RNO Warehouse Bin 7',
+            'type' => 'Storage',
+            'occupancy' => '184 assets',
+            'work' => 'Cycle count',
+            'address' => 'Reno, NV',
+            'access' => 'Warehouse staff',
+            'power' => 'Not powered',
+        ],
+        'truck-nv-12' => [
+            'name' => 'Truck NV-12',
+            'type' => 'Vehicle',
+            'occupancy' => '26 assets',
+            'work' => 'Transfer review',
+            'address' => 'Northern Nevada route',
+            'access' => 'Assigned field crew',
+            'power' => 'Vehicle inverter',
+        ],
+    ];
+
     public function __construct(
         private readonly RegisterAssetHandler $registerAsset,
         private readonly AssetRepository $assetRepository,
@@ -520,18 +570,18 @@ final class AssetWebApp
 
     private function renderGet(string $path, Request $request): Response
     {
-        if ($path !== '/assets' || !$request->query->has('id')) {
+        if (($path !== '/assets' && $path !== '/locations') || !$request->query->has('id')) {
             return $this->render($path);
         }
 
-        try {
-            $id = $request->query->get('id');
-        } catch (BadRequestException) {
+        $id = $this->stringQueryId($request);
+
+        if ($id === null) {
             return new Response('Not Found', Response::HTTP_NOT_FOUND);
         }
 
-        if (!is_string($id)) {
-            return new Response('Not Found', Response::HTTP_NOT_FOUND);
+        if ($path === '/locations') {
+            return $this->render($path, locationId: $id);
         }
 
         try {
@@ -541,17 +591,34 @@ final class AssetWebApp
         }
     }
 
+    private function stringQueryId(Request $request): ?string
+    {
+        try {
+            $id = $request->query->get('id');
+        } catch (BadRequestException) {
+            return null;
+        }
+
+        return is_string($id) ? $id : null;
+    }
+
     private function render(
         string $path,
         ?string $success = null,
         ?string $error = null,
         int $status = Response::HTTP_OK,
         ?AssetId $detailAssetId = null,
+        ?string $locationId = null,
     ): Response {
         $screen = self::SCREENS[$path];
         $detailAsset = $detailAssetId === null ? null : $this->assetRepository->get($detailAssetId);
+        $location = $locationId === null ? null : (self::LOCATIONS[$locationId] ?? null);
 
         if ($detailAssetId !== null && $detailAsset === null) {
+            return new Response('Not Found', Response::HTTP_NOT_FOUND);
+        }
+
+        if ($locationId !== null && $location === null) {
             return new Response('Not Found', Response::HTTP_NOT_FOUND);
         }
 
@@ -561,6 +628,16 @@ final class AssetWebApp
                 'section' => 'Inventory',
                 'title' => $detailAsset->name->value,
                 'summary' => sprintf('Asset record %s in %s.', $detailAsset->id->value, strtolower($this->assetStatusLabel($detailAsset->status))),
+                'items' => [],
+            ];
+        }
+
+        if ($location !== null) {
+            $screen = [
+                'label' => 'Locations',
+                'section' => 'Facilities',
+                'title' => $location['name'],
+                'summary' => sprintf('%s location with %s occupancy and open work: %s.', $location['type'], strtolower($location['occupancy']), $location['work']),
                 'items' => [],
             ];
         }
@@ -579,6 +656,7 @@ final class AssetWebApp
         $navigation = $this->renderNavigation($path);
         $content = match (true) {
             $detailAsset !== null => $this->renderAssetDetailContent($detailAsset),
+            $location !== null => $this->renderLocationDetailContent($location),
             $path === '/assets/register' => $this->renderRegistrationContent($screen, $successHtml, $errorHtml, $inputDescription),
             default => $this->renderScreenContent($path, $screen),
         };
@@ -1104,6 +1182,72 @@ final class AssetWebApp
             HTML, $status);
     }
 
+    /**
+     * @param array{name: string, type: string, occupancy: string, work: string, address: string, access: string, power: string} $location
+     */
+    private function renderLocationDetailContent(array $location): string
+    {
+        $summary = $this->renderTable(
+            ['Field', 'Value'],
+            [
+                ['Name', $location['name']],
+                ['Type', $location['type']],
+                ['Occupancy', $location['occupancy']],
+                ['Open Work', $location['work']],
+                ['Address', $location['address']],
+                ['Access', $location['access']],
+                ['Power', $location['power']],
+            ],
+        );
+        $metrics = $this->renderMetrics([
+            ['label' => 'Occupancy', 'value' => $location['occupancy'], 'detail' => 'Current capacity signal'],
+            ['label' => 'Open work', 'value' => $location['work'], 'detail' => 'Next facilities action'],
+            ['label' => 'Access', 'value' => $location['access'], 'detail' => 'Entry control'],
+            ['label' => 'Power', 'value' => $location['power'], 'detail' => 'Power context'],
+        ]);
+        $tabs = $this->renderSideItems([
+            ['label' => 'Summary', 'value' => 'Capacity and access'],
+            ['label' => 'Assets', 'value' => 'Contained inventory'],
+            ['label' => 'Rack Elevation', 'value' => 'Placement plan'],
+            ['label' => 'Power', 'value' => 'Feed and circuit map'],
+            ['label' => 'Audit', 'value' => 'Counts and exceptions'],
+        ]);
+        $actions = $this->renderActions(['Edit Location', 'Plan Move', 'Start Audit', 'Print Labels']);
+
+        return <<<HTML
+            {$metrics}
+            <div class="workspace-grid">
+              <div class="workspace">
+                <section class="panel" aria-labelledby="location-summary-title">
+                  <div class="panel-header">
+                    <h2 id="location-summary-title">Summary</h2>
+                    <div class="toolbar" aria-label="Location actions">
+                      {$actions}
+                    </div>
+                  </div>
+                  {$summary}
+                </section>
+                <section class="panel" aria-labelledby="location-work-title">
+                  <div class="panel-header">
+                    <h2 id="location-work-title">Location Work</h2>
+                  </div>
+                  <ul class="side-list">
+                    <li><span class="side-label">Placement</span><span class="side-value">Review contained assets and capacity conflicts.</span></li>
+                    <li><span class="side-label">Access</span><span class="side-value">Confirm contacts and access instructions before dispatch.</span></li>
+                    <li><span class="side-label">Audit</span><span class="side-value">Capture counts, exceptions, and pending moves.</span></li>
+                  </ul>
+                </section>
+              </div>
+              <aside class="panel" aria-labelledby="location-tabs-title">
+                <div class="panel-header">
+                  <h2 id="location-tabs-title">Location Tabs</h2>
+                </div>
+                {$tabs}
+              </aside>
+            </div>
+            HTML;
+    }
+
     private function renderAssetDetailContent(Asset $asset): string
     {
         $status = $this->assetStatusLabel($asset->status);
@@ -1275,6 +1419,11 @@ final class AssetWebApp
     private function workspaceFor(string $path): array
     {
         $workspace = self::WORKSPACES[$path];
+
+        if ($path === '/locations') {
+            return $this->locationIndexWorkspace($workspace);
+        }
+
         $assets = $this->assetRepository->all();
 
         if ($assets === []) {
@@ -1347,6 +1496,43 @@ final class AssetWebApp
     }
 
     /**
+     * @param array{
+     *     actions: list<string>,
+     *     metrics: list<array{label: string, value: string, detail: string}>,
+     *     tableTitle: string,
+     *     columns: list<string>,
+     *     rows: list<list<string>>,
+     *     sideTitle: string,
+     *     sideItems: list<array{label: string, value: string}>
+     * } $workspace
+     *
+     * @return array{
+     *     actions: list<string>,
+     *     metrics: list<array{label: string, value: string, detail: string}>,
+     *     tableTitle: string,
+     *     columns: list<string>,
+     *     rows: list<list<string>>,
+     *     sideTitle: string,
+     *     sideItems: list<array{label: string, value: string}>
+     * }
+     */
+    private function locationIndexWorkspace(array $workspace): array
+    {
+        $workspace['rows'] = [];
+
+        foreach (self::LOCATIONS as $id => $location) {
+            $workspace['rows'][] = [
+                $this->internalLinkCell('/locations?id=' . $id, $location['name']),
+                $location['type'],
+                $location['occupancy'],
+                $location['work'],
+            ];
+        }
+
+        return $workspace;
+    }
+
+    /**
      * @param list<Asset> $assets
      */
     private function countAssetsByStatus(array $assets, AssetStatus $status): int
@@ -1365,7 +1551,12 @@ final class AssetWebApp
 
     private function assetLinkCell(Asset $asset): string
     {
-        return sprintf('asset-link:%s|%s', $asset->id->value, $asset->name->value);
+        return $this->internalLinkCell('/assets?id=' . $asset->id->value, $asset->name->value);
+    }
+
+    private function internalLinkCell(string $href, string $label): string
+    {
+        return sprintf('internal-link:%s|%s', $href, $label);
     }
 
     /**
@@ -1434,12 +1625,12 @@ final class AssetWebApp
 
     private function renderTableCell(string $cell): string
     {
-        if (str_starts_with($cell, 'asset-link:')) {
-            [$id, $label] = explode('|', substr($cell, strlen('asset-link:')), 2);
+        if (str_starts_with($cell, 'internal-link:')) {
+            [$href, $label] = explode('|', substr($cell, strlen('internal-link:')), 2);
 
             return sprintf(
-                '<td><a href="/assets?id=%s">%s</a></td>',
-                $this->escape($id),
+                '<td><a href="%s">%s</a></td>',
+                $this->escape($href),
                 $this->escape($label),
             );
         }

@@ -201,6 +201,38 @@ final class AssetWebAppTest extends TestCase
         self::assertSame('Not Found', $response->getContent());
     }
 
+    public function testItLinksLocationRowsToLocationDetail(): void
+    {
+        $response = $this->app('location-index-links')->handle(Request::create('/locations'));
+        $content = (string) $response->getContent();
+
+        self::assertSame(200, $response->getStatusCode());
+        self::assertStringContainsString('<a href="/locations?id=sjc1-row-c-rack-14">SJC1 Row C Rack 14</a>', $content);
+        self::assertStringContainsString('<a href="/locations?id=truck-nv-12">Truck NV-12</a>', $content);
+    }
+
+    public function testItRendersLocationDetailFromTheLocationIndexRoute(): void
+    {
+        $response = $this->app('location-detail')->handle(Request::create('/locations', 'GET', ['id' => 'sjc1-row-c-rack-14']));
+        $content = (string) $response->getContent();
+
+        self::assertSame(200, $response->getStatusCode());
+        self::assertStringContainsString('<h1>SJC1 Row C Rack 14</h1>', $content);
+        self::assertStringContainsString('Location Tabs', $content);
+        self::assertStringContainsString('Rack Elevation', $content);
+        self::assertStringContainsString('Plan Move', $content);
+        self::assertStringContainsString('Badge and cage escort', $content);
+        self::assertStringContainsString('href="/locations" aria-current="page"', $content);
+    }
+
+    public function testItReturnsNotFoundForUnknownLocationDetailIds(): void
+    {
+        $response = $this->app('unknown-location-detail')->handle(Request::create('/locations', 'GET', ['id' => 'unknown-site']));
+
+        self::assertSame(404, $response->getStatusCode());
+        self::assertSame('Not Found', $response->getContent());
+    }
+
     public function testItRendersNonDefaultAssetStatusesOnTheAssetIndex(): void
     {
         $path = $this->storePath('asset-index-statuses');
