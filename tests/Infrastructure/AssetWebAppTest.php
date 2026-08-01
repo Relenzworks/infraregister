@@ -31,7 +31,7 @@ final class AssetWebAppTest extends TestCase
         self::assertStringContainsString('<a class="nav-link" href="/assets"', (string) $response->getContent());
         self::assertStringContainsString('<a class="button-link" href="/assets/register">Register Asset</a>', (string) $response->getContent());
         self::assertStringContainsString('<form class="global-search" role="search" method="get" action="/search">', (string) $response->getContent());
-        self::assertStringContainsString('<input type="search" name="q" aria-label="Global search" placeholder="Search assets, hosts, IPs">', (string) $response->getContent());
+        self::assertStringContainsString('<input type="search" name="q" value="" aria-label="Global search" placeholder="Search assets, hosts, IPs">', (string) $response->getContent());
         self::assertStringContainsString('<form method="post" action="/assets/register" novalidate>', (string) $response->getContent());
         self::assertStringContainsString('aria-describedby="asset-name-requirements"', (string) $response->getContent());
         self::assertStringContainsString('Register Asset', (string) $response->getContent());
@@ -158,6 +158,17 @@ final class AssetWebAppTest extends TestCase
             '<nav class="breadcrumbs" aria-label="Breadcrumb"><ol><li><a href="/">Dashboard</a></li><li><a href="/admin">Admin</a></li><li aria-current="page">Integrations</li></ol></nav>',
             $content,
         );
+    }
+
+    public function testItPreservesGlobalSearchQueryContext(): void
+    {
+        $response = $this->app('search-query')->handle(Request::create('/search', 'GET', ['q' => 'core <router>']));
+        $content = (string) $response->getContent();
+
+        self::assertSame(200, $response->getStatusCode());
+        self::assertStringContainsString('value="core &lt;router&gt;"', $content);
+        self::assertStringContainsString('Showing representative grouped results for &quot;core &lt;router&gt;&quot;.', $content);
+        self::assertStringContainsString('Grouped Search Results', $content);
     }
 
     public function testItRegistersAnAssetFromPostData(): void
