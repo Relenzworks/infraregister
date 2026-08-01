@@ -1797,7 +1797,7 @@ final class AssetWebApp
             )
             || !$request->query->has('id')
         ) {
-            return $this->render($path);
+            return $this->render($path, searchQuery: $this->stringQuery($request, 'q'));
         }
 
         $id = $this->stringQueryId($request);
@@ -1859,13 +1859,18 @@ final class AssetWebApp
 
     private function stringQueryId(Request $request): ?string
     {
+        return $this->stringQuery($request, 'id');
+    }
+
+    private function stringQuery(Request $request, string $name): ?string
+    {
         try {
-            $id = $request->query->get('id');
+            $value = $request->query->get($name);
         } catch (BadRequestException) {
             return null;
         }
 
-        return is_string($id) ? $id : null;
+        return is_string($value) ? trim($value) : null;
     }
 
     private function render(
@@ -1885,8 +1890,10 @@ final class AssetWebApp
         ?string $adminConfigurationId = null,
         ?string $networkSignalId = null,
         ?string $attentionItemId = null,
+        ?string $searchQuery = null,
     ): Response {
         $screen = self::SCREENS[$path];
+        $searchValue = $searchQuery ?? '';
         $detailAsset = $detailAssetId === null ? null : $this->assetRepository->get($detailAssetId);
         $location = $locationId === null ? null : (self::LOCATIONS[$locationId] ?? null);
         $custodyTransfer = $custodyTransferId === null ? null : (self::CUSTODY_TRANSFERS[$custodyTransferId] ?? null);
@@ -2080,6 +2087,10 @@ final class AssetWebApp
                 'summary' => sprintf('%s priority item owned by %s is due %s.', $attentionItem['priority'], $attentionItem['owner'], strtolower($attentionItem['due'])),
                 'items' => [],
             ];
+        }
+
+        if ($path === '/search' && $searchValue !== '') {
+            $screen['summary'] = sprintf('Showing representative grouped results for "%s".', $searchValue);
         }
 
         $successHtml = $success === null ? '' : sprintf(
@@ -2754,7 +2765,7 @@ final class AssetWebApp
                     <span>InfraRegister</span>
                   </a>
                   <form class="global-search" role="search" method="get" action="/search">
-                    <input type="search" name="q" aria-label="Global search" placeholder="Search assets, hosts, IPs">
+                    <input type="search" name="q" value="{$this->escape($searchValue)}" aria-label="Global search" placeholder="Search assets, hosts, IPs">
                     <button type="submit">Search</button>
                   </form>
                   <a class="button-link" href="/assets/register">Register Asset</a>
