@@ -17,6 +17,12 @@ use RelenzWorks\InfraRegister\Infrastructure\Persistence\JsonAssetRepository;
 use RelenzWorks\InfraRegister\Infrastructure\Security\LocalUserDirectory;
 use RelenzWorks\InfraRegister\Port\AssetRepository;
 use RelenzWorks\InfraRegister\Port\UserDirectory;
+use Symfony\Component\Form\Extension\Core\Type\FormType;
+use Symfony\Component\Form\Extension\Core\Type\TextType;
+use Symfony\Component\Form\Extension\HttpFoundation\HttpFoundationExtension;
+use Symfony\Component\Form\FormFactoryInterface;
+use Symfony\Component\Form\FormInterface;
+use Symfony\Component\Form\Forms;
 use Symfony\Component\HttpFoundation\Exception\BadRequestException;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -1699,6 +1705,7 @@ final class AssetWebApp
         private readonly AssetRepository $assetRepository,
         private readonly ?UserDirectory $userDirectory,
         private readonly AccessPolicy $accessPolicy = new AccessPolicy(),
+        private readonly ?FormFactoryInterface $formFactory = null,
     ) {}
 
     public static function fromStore(string $path, ?string $basePath, ?string $writeAuth = null): self
@@ -1714,7 +1721,7 @@ final class AssetWebApp
 
     public function withUserDirectory(?UserDirectory $userDirectory): self
     {
-        return new self($this->registerAsset, $this->assetRepository, $userDirectory, $this->accessPolicy);
+        return new self($this->registerAsset, $this->assetRepository, $userDirectory, $this->accessPolicy, $this->formFactory);
     }
 
     public function handle(Request $request): Response
@@ -1755,11 +1762,16 @@ final class AssetWebApp
         }
 
         $parameters = $request->request->all();
-        $name = $parameters['name'] ?? null;
+        $submittedName = $parameters['name'] ?? null;
 
-        if (!is_string($name)) {
+        if (!is_string($submittedName)) {
             return $this->render('/assets/register', error: 'Asset name is required.', status: Response::HTTP_UNPROCESSABLE_ENTITY);
         }
+
+        $form = $this->registrationForm();
+        $form->handleRequest($request);
+        $data = $form->getData();
+        $name = is_array($data) && is_string($data['name'] ?? null) ? $data['name'] : $submittedName;
 
         try {
             $asset = ($this->registerAsset)(new RegisterAsset($name));
@@ -2150,7 +2162,7 @@ final class AssetWebApp
             $adminConfiguration !== null => $this->renderAdminConfigurationDetailContent($adminConfiguration),
             $networkSignal !== null => $this->renderNetworkSignalDetailContent($networkSignal),
             $attentionItem !== null => $this->renderAttentionItemDetailContent($attentionItem),
-            $path === '/assets/register' => $this->renderRegistrationContent($screen, $successHtml, $errorHtml, $inputDescription),
+            $path === '/assets/register' => $this->renderRegistrationContent($screen, $successHtml, $errorHtml, $inputDescription, $this->registrationForm()),
             default => $this->renderScreenContent($path, $screen),
         };
 
@@ -3848,8 +3860,16 @@ final class AssetWebApp
         string $successHtml,
         string $errorHtml,
         string $inputDescription,
+        FormInterface $form,
     ): string {
         $overview = $this->renderCards($screen['items']);
+        $formView = $form->createView();
+        $nameView = $formView['name'];
+        $fullName = $nameView->vars['full_name'] ?? 'name';
+        $value = $nameView->vars['value'] ?? '';
+        $nameFullName = $this->escape(is_scalar($fullName) ? (string) $fullName : 'name');
+        $nameValue = $this->escape(is_scalar($value) ? (string) $value : '');
+        $nameRequired = ($nameView->vars['required'] ?? false) === true ? ' required' : '';
 
         return <<<HTML
             <div class="workspace">
@@ -3861,7 +3881,7 @@ final class AssetWebApp
                 {$errorHtml}
                 <form method="post" action="/assets/register" novalidate>
                   <label for="name">Asset name</label>
-                  <input id="name" name="name" maxlength="120" required autocomplete="off" aria-describedby="{$inputDescription}">
+                  <input id="name" name="{$nameFullName}" value="{$nameValue}" maxlength="120"{$nameRequired} autocomplete="off" aria-describedby="{$inputDescription}">
                   <p class="field-note" id="asset-name-requirements">Required, 120 characters maximum.</p>
                   <button type="submit">Register Asset</button>
                 </form>
@@ -3874,6 +3894,26 @@ final class AssetWebApp
               </section>
             </div>
             HTML;
+    }
+
+    private function registrationForm(): FormInterface
+    {
+        return $this->effectiveFormFactory()
+            ->createNamedBuilder('', FormType::class, null, [
+                'compound' => true,
+            ])
+            ->add('name', TextType::class, [
+                'empty_data' => '',
+                'required' => true,
+            ])
+            ->getForm();
+    }
+
+    private function effectiveFormFactory(): FormFactoryInterface
+    {
+        return $this->formFactory ?? Forms::createFormFactoryBuilder()
+            ->addExtension(new HttpFoundationExtension())
+            ->getFormFactory();
     }
 
     /**

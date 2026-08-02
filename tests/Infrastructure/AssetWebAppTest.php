@@ -38,6 +38,7 @@ final class AssetWebAppTest extends TestCase
         self::assertStringContainsString('<a class="utility-link" href="/reports">Help</a>', (string) $response->getContent());
         self::assertStringContainsString('<a class="utility-link" href="/admin/roles">Admin</a>', (string) $response->getContent());
         self::assertStringContainsString('<form method="post" action="/assets/register" novalidate>', (string) $response->getContent());
+        self::assertStringContainsString('<input id="name" name="name" value="" maxlength="120" required autocomplete="off" aria-describedby="asset-name-requirements">', (string) $response->getContent());
         self::assertStringContainsString('aria-describedby="asset-name-requirements"', (string) $response->getContent());
         self::assertStringContainsString('Register Asset', (string) $response->getContent());
     }
