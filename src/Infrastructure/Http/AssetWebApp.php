@@ -2680,6 +2680,23 @@ final class AssetWebApp
                   font-weight: 800;
                 }
 
+                .bulk-action-bar {
+                  display: flex;
+                  flex-wrap: wrap;
+                  align-items: center;
+                  gap: 10px;
+                  padding: 12px 14px;
+                  border-bottom: 1px solid var(--line);
+                  background: #fbfcfd;
+                }
+
+                .bulk-action-status {
+                  margin-right: auto;
+                  color: var(--muted);
+                  font-size: 14px;
+                  font-weight: 750;
+                }
+
                 form {
                   display: grid;
                   gap: 14px;
@@ -2903,6 +2920,12 @@ final class AssetWebApp
                     font-size: 12px;
                     font-weight: 800;
                     text-transform: uppercase;
+                  }
+
+                  .bulk-action-bar {
+                    position: sticky;
+                    top: 0;
+                    z-index: 1;
                   }
                 }
 
@@ -3832,6 +3855,7 @@ final class AssetWebApp
         $metrics = $this->renderMetrics($workspace['metrics']);
         $states = $this->renderScreenStates($path);
         $actions = $this->renderActions($workspace['actions'], $path);
+        $bulkActions = $this->renderBulkActions($path);
         $table = $this->renderTable($workspace['columns'], $workspace['rows']);
         $sideItems = $this->renderSideItems($workspace['sideItems']);
         $tableTitle = $this->escape($workspace['tableTitle']);
@@ -3849,6 +3873,7 @@ final class AssetWebApp
                       {$actions}
                     </div>
                   </div>
+                  {$bulkActions}
                   {$table}
                 </section>
                 <section class="panel" aria-labelledby="screen-capabilities-title">
@@ -3864,6 +3889,22 @@ final class AssetWebApp
                 </div>
                 {$sideItems}
               </aside>
+            </div>
+            HTML;
+    }
+
+    private function renderBulkActions(string $path): string
+    {
+        if ($path !== '/assets') {
+            return '';
+        }
+
+        $actions = $this->renderActions(['Assign Owner', 'Change Status', 'Print Labels', 'Start Audit'], '/assets');
+
+        return <<<HTML
+            <div class="bulk-action-bar" aria-label="Asset bulk selection actions">
+              <span class="bulk-action-status">0 selected</span>
+              {$actions}
             </div>
             HTML;
     }
@@ -4554,9 +4595,11 @@ final class AssetWebApp
             'Add Field' => '/reports/builder',
             'Add Site' => '/locations',
             'Add Vendor' => '/procurement/vendors',
+            'Assign Owner' => '/people',
             'Assign Address' => '/network/ipam',
             'Attach Document' => '/contracts',
             'Build Filter' => '/reports/builder',
+            'Change Status' => '/assets',
             'Create Asset' => '/assets/register',
             'Create Assets' => '/assets/register',
             'Create Transfer' => '/custody',

@@ -217,6 +217,28 @@ final class AssetWebAppTest extends TestCase
         self::assertStringContainsString('<a href="/network/interfaces">import interfaces</a>', $content);
     }
 
+    public function testItRendersAssetBulkSelectionActions(): void
+    {
+        $response = $this->app('asset-bulk-actions')->handle(Request::create('/assets'));
+        $content = (string) $response->getContent();
+
+        self::assertSame(200, $response->getStatusCode());
+        self::assertStringContainsString('<div class="bulk-action-bar" aria-label="Asset bulk selection actions">', $content);
+        self::assertStringContainsString('<span class="bulk-action-status">0 selected</span>', $content);
+        self::assertStringContainsString('<a class="secondary-action" href="/people">Assign Owner</a>', $content);
+        self::assertStringContainsString('<a class="secondary-action" href="/assets">Change Status</a>', $content);
+        self::assertStringContainsString('<a class="secondary-action" href="/procurement/receiving">Print Labels</a>', $content);
+        self::assertStringContainsString('<a class="secondary-action" href="/">Start Audit</a>', $content);
+    }
+
+    public function testItLimitsBulkSelectionActionsToTheAssetIndex(): void
+    {
+        $response = $this->app('no-network-bulk-actions')->handle(Request::create('/network'));
+
+        self::assertSame(200, $response->getStatusCode());
+        self::assertStringNotContainsString('Asset bulk selection actions', (string) $response->getContent());
+    }
+
     public function testItNormalizesTrailingSlashesForScreens(): void
     {
         $response = $this->app('trailing-slash')->handle(Request::create('/assets/'));
