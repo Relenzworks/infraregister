@@ -2819,6 +2819,55 @@ final class AssetWebApp
                   .metric-grid {
                     grid-template-columns: 1fr;
                   }
+
+                  .data-table {
+                    min-width: 0;
+                    border-collapse: separate;
+                    border-spacing: 0 10px;
+                  }
+
+                  .data-table thead {
+                    position: absolute;
+                    width: 1px;
+                    height: 1px;
+                    overflow: hidden;
+                    clip: rect(0 0 0 0);
+                    white-space: nowrap;
+                  }
+
+                  .data-table tbody {
+                    display: grid;
+                    gap: 10px;
+                  }
+
+                  .data-table tr {
+                    display: grid;
+                    gap: 0;
+                    border: 1px solid var(--line);
+                    border-radius: 7px;
+                    background: #ffffff;
+                    overflow: hidden;
+                  }
+
+                  .data-table td {
+                    display: grid;
+                    grid-template-columns: minmax(96px, 34%) minmax(0, 1fr);
+                    gap: 10px;
+                    padding: 10px 12px;
+                    border-bottom: 1px solid var(--line);
+                  }
+
+                  .data-table td:last-child {
+                    border-bottom: 0;
+                  }
+
+                  .data-table td::before {
+                    content: attr(data-label);
+                    color: var(--muted);
+                    font-size: 12px;
+                    font-weight: 800;
+                    text-transform: uppercase;
+                  }
                 }
 
                 @media (prefers-reduced-motion: reduce) {
@@ -4479,8 +4528,8 @@ final class AssetWebApp
         foreach ($rows as $row) {
             $cells = '';
 
-            foreach ($row as $cell) {
-                $cells .= $this->renderTableCell($cell);
+            foreach ($row as $index => $cell) {
+                $cells .= $this->renderTableCell($cell, $columns[$index] ?? '');
             }
 
             $body .= sprintf('<tr>%s</tr>', $cells);
@@ -4493,19 +4542,22 @@ final class AssetWebApp
         );
     }
 
-    private function renderTableCell(string $cell): string
+    private function renderTableCell(string $cell, string $label): string
     {
+        $labelAttribute = sprintf(' data-label="%s"', $this->escape($label));
+
         if (str_starts_with($cell, 'internal-link:')) {
             [$href, $label] = explode('|', substr($cell, strlen('internal-link:')), 2);
 
             return sprintf(
-                '<td><a href="%s">%s</a></td>',
+                '<td%s><a href="%s">%s</a></td>',
+                $labelAttribute,
                 $this->escape($href),
                 $this->escape($label),
             );
         }
 
-        return sprintf('<td>%s</td>', $this->escape($cell));
+        return sprintf('<td%s>%s</td>', $labelAttribute, $this->escape($cell));
     }
 
     /**

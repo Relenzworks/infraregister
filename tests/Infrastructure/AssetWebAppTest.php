@@ -180,6 +180,17 @@ final class AssetWebAppTest extends TestCase
         self::assertStringContainsString('<a href="/admin" aria-current="page">More</a>', (string) $network->getContent());
     }
 
+    public function testItAnnotatesTableCellsForMobileListRows(): void
+    {
+        $response = $this->app('mobile-table-cells')->handle(Request::create('/network'));
+        $content = (string) $response->getContent();
+
+        self::assertSame(200, $response->getStatusCode());
+        self::assertStringContainsString('<td data-label="Device"><a href="/network?id=', $content);
+        self::assertStringContainsString('<td data-label="Interface">et-0/0/3</td>', $content);
+        self::assertStringContainsString('content: attr(data-label);', $content);
+    }
+
     public function testItNormalizesTrailingSlashesForScreens(): void
     {
         $response = $this->app('trailing-slash')->handle(Request::create('/assets/'));
