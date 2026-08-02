@@ -2645,6 +2645,41 @@ final class AssetWebApp
                   font-size: 14px;
                 }
 
+                .state-grid {
+                  display: grid;
+                  grid-template-columns: repeat(4, minmax(0, 1fr));
+                  gap: 12px;
+                  margin-bottom: 18px;
+                }
+
+                .state-card {
+                  min-height: 118px;
+                  padding: 14px;
+                  border: 1px solid var(--line);
+                  border-radius: 7px;
+                  background: #ffffff;
+                }
+
+                .state-card h2 {
+                  margin: 0 0 8px;
+                  font-size: 15px;
+                  line-height: 1.3;
+                }
+
+                .state-card p {
+                  margin: 0;
+                  color: var(--muted);
+                  font-size: 13px;
+                }
+
+                .state-card a {
+                  display: inline-flex;
+                  margin-top: 10px;
+                  color: var(--accent-strong);
+                  font-size: 13px;
+                  font-weight: 800;
+                }
+
                 form {
                   display: grid;
                   gap: 14px;
@@ -2816,7 +2851,8 @@ final class AssetWebApp
                   }
 
                   .workspace-grid,
-                  .metric-grid {
+                  .metric-grid,
+                  .state-grid {
                     grid-template-columns: 1fr;
                   }
 
@@ -3794,6 +3830,7 @@ final class AssetWebApp
         $cards = $this->renderCards($screen['items']);
         $workspace = $this->workspaceFor($path);
         $metrics = $this->renderMetrics($workspace['metrics']);
+        $states = $this->renderScreenStates($path);
         $actions = $this->renderActions($workspace['actions'], $path);
         $table = $this->renderTable($workspace['columns'], $workspace['rows']);
         $sideItems = $this->renderSideItems($workspace['sideItems']);
@@ -3802,6 +3839,7 @@ final class AssetWebApp
 
         return <<<HTML
             {$metrics}
+            {$states}
             <div class="workspace-grid">
               <div class="workspace">
                 <section class="panel" aria-labelledby="primary-work-title">
@@ -3828,6 +3866,73 @@ final class AssetWebApp
               </aside>
             </div>
             HTML;
+    }
+
+    private function renderScreenStates(string $path): string
+    {
+        $primaryAction = $this->primaryStateAction($path);
+        $states = [
+            [
+                'title' => 'Empty State',
+                'body' => sprintf('If this view has no records, keep the page stable and offer %s as the primary next step.', $primaryAction['label']),
+                'href' => $primaryAction['href'],
+                'action' => $primaryAction['label'],
+            ],
+            [
+                'title' => 'Loading State',
+                'body' => 'Reserve metric, table, and side-panel space so refreshes do not shift operator focus.',
+                'href' => $path,
+                'action' => 'Refresh view',
+            ],
+            [
+                'title' => 'Error State',
+                'body' => 'Show the failed source, recovery action, and a retry path without hiding current context.',
+                'href' => $path,
+                'action' => 'Retry',
+            ],
+            [
+                'title' => 'Permission State',
+                'body' => 'Explain what access is missing without exposing sensitive inventory details.',
+                'href' => '/admin/roles',
+                'action' => 'Review roles',
+            ],
+        ];
+        $cards = '';
+
+        foreach ($states as $state) {
+            $cards .= sprintf(
+                '<article class="state-card"><h2>%s</h2><p>%s</p><a href="%s">%s</a></article>',
+                $this->escape($state['title']),
+                $this->escape($state['body']),
+                $this->escape($state['href']),
+                $this->escape($state['action']),
+            );
+        }
+
+        return sprintf('<section class="state-grid" aria-label="Screen states">%s</section>', $cards);
+    }
+
+    /**
+     * @return array{label: string, href: string}
+     */
+    private function primaryStateAction(string $path): array
+    {
+        return match (true) {
+            $path === '/' => ['label' => 'review exceptions', 'href' => '/monitoring/exceptions'],
+            str_starts_with($path, '/assets') => ['label' => 'register an asset', 'href' => '/assets/register'],
+            str_starts_with($path, '/imports') => ['label' => 'upload a batch', 'href' => '/imports'],
+            str_starts_with($path, '/network') => ['label' => 'import interfaces', 'href' => '/network/interfaces'],
+            str_starts_with($path, '/locations') => ['label' => 'add a site', 'href' => '/locations'],
+            str_starts_with($path, '/people') => ['label' => 'add a contact', 'href' => '/people'],
+            str_starts_with($path, '/custody') => ['label' => 'create a transfer', 'href' => '/custody'],
+            str_starts_with($path, '/procurement') => ['label' => 'receive a PO', 'href' => '/procurement/receiving'],
+            str_starts_with($path, '/contracts') => ['label' => 'add a contract', 'href' => '/contracts'],
+            str_starts_with($path, '/maintenance') => ['label' => 'schedule work', 'href' => '/maintenance/calendar'],
+            str_starts_with($path, '/monitoring') => ['label' => 'run reconcile', 'href' => '/monitoring/exceptions'],
+            str_starts_with($path, '/reports') => ['label' => 'build a report', 'href' => '/reports/builder'],
+            str_starts_with($path, '/admin') => ['label' => 'review settings', 'href' => '/admin/settings'],
+            default => ['label' => 'open the next task', 'href' => $path],
+        };
     }
 
     /**
