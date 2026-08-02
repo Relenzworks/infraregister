@@ -154,6 +154,32 @@ final class AssetWebAppTest extends TestCase
         self::assertStringContainsString('<span class="secondary-action" aria-disabled="true">Bulk Edit</span>', $content);
     }
 
+    public function testItRendersMobileBottomNavigationForCoreScreens(): void
+    {
+        $response = $this->app('mobile-assets')->handle(Request::create('/assets/register'));
+        $content = (string) $response->getContent();
+
+        self::assertSame(200, $response->getStatusCode());
+        self::assertStringContainsString('<nav class="mobile-bottom-nav" aria-label="Mobile primary navigation">', $content);
+        self::assertStringContainsString('<a href="/">Dashboard</a>', $content);
+        self::assertStringContainsString('<a href="/assets" aria-current="page">Assets</a>', $content);
+        self::assertStringContainsString('<a href="/search">Search</a>', $content);
+        self::assertStringContainsString('<a href="/custody">Transfers</a>', $content);
+        self::assertStringContainsString('<a href="/admin">More</a>', $content);
+    }
+
+    public function testItMarksTransfersAndMoreInMobileBottomNavigation(): void
+    {
+        $custody = $this->app('mobile-custody')->handle(Request::create('/custody'));
+        $network = $this->app('mobile-more')->handle(Request::create('/network'));
+
+        self::assertSame(200, $custody->getStatusCode());
+        self::assertStringContainsString('<a href="/custody" aria-current="page">Transfers</a>', (string) $custody->getContent());
+
+        self::assertSame(200, $network->getStatusCode());
+        self::assertStringContainsString('<a href="/admin" aria-current="page">More</a>', (string) $network->getContent());
+    }
+
     public function testItNormalizesTrailingSlashesForScreens(): void
     {
         $response = $this->app('trailing-slash')->handle(Request::create('/assets/'));
