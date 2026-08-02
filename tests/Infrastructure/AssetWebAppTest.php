@@ -191,6 +191,32 @@ final class AssetWebAppTest extends TestCase
         self::assertStringContainsString('content: attr(data-label);', $content);
     }
 
+    public function testItDefinesIndexScreenStates(): void
+    {
+        $response = $this->app('screen-states')->handle(Request::create('/assets'));
+        $content = (string) $response->getContent();
+
+        self::assertSame(200, $response->getStatusCode());
+        self::assertStringContainsString('<section class="state-grid" aria-label="Screen states">', $content);
+        self::assertStringContainsString('<article class="state-card"><h2>Empty State</h2>', $content);
+        self::assertStringContainsString('offer register an asset as the primary next step.', $content);
+        self::assertStringContainsString('<a href="/assets/register">register an asset</a>', $content);
+        self::assertStringContainsString('<article class="state-card"><h2>Loading State</h2>', $content);
+        self::assertStringContainsString('<article class="state-card"><h2>Error State</h2>', $content);
+        self::assertStringContainsString('<article class="state-card"><h2>Permission State</h2>', $content);
+        self::assertStringContainsString('<a href="/admin/roles">Review roles</a>', $content);
+    }
+
+    public function testItUsesScreenSpecificEmptyStateActions(): void
+    {
+        $response = $this->app('network-screen-states')->handle(Request::create('/network'));
+        $content = (string) $response->getContent();
+
+        self::assertSame(200, $response->getStatusCode());
+        self::assertStringContainsString('offer import interfaces as the primary next step.', $content);
+        self::assertStringContainsString('<a href="/network/interfaces">import interfaces</a>', $content);
+    }
+
     public function testItNormalizesTrailingSlashesForScreens(): void
     {
         $response = $this->app('trailing-slash')->handle(Request::create('/assets/'));
