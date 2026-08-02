@@ -2136,6 +2136,7 @@ final class AssetWebApp
             ? $screen['section']
             : sprintf('%s / %s', $screen['section'], $detailStatus);
         $breadcrumbs = $this->renderBreadcrumbs($path, $screen, $isDetailScreen);
+        $mobileBottomNavigation = $this->renderMobileBottomNavigation($path);
         $content = match (true) {
             $detailAsset !== null => $this->renderAssetDetailContent($detailAsset),
             $location !== null => $this->renderLocationDetailContent($location),
@@ -2309,6 +2310,10 @@ final class AssetWebApp
                   font-size: 12px;
                   line-height: 1.5;
                   text-align: center;
+                }
+
+                .mobile-bottom-nav {
+                  display: none;
                 }
 
                 .app-layout {
@@ -2763,7 +2768,38 @@ final class AssetWebApp
                   }
 
                   main {
-                    padding: 20px 16px 36px;
+                    padding: 20px 16px 96px;
+                  }
+
+                  .mobile-bottom-nav {
+                    position: fixed;
+                    right: 0;
+                    bottom: 0;
+                    left: 0;
+                    z-index: 4;
+                    display: grid;
+                    grid-template-columns: repeat(5, minmax(0, 1fr));
+                    border-top: 1px solid var(--line);
+                    background: rgba(255, 255, 255, 0.98);
+                    box-shadow: 0 -8px 22px rgba(15, 23, 42, 0.08);
+                  }
+
+                  .mobile-bottom-nav a {
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    min-height: 58px;
+                    padding: 8px 4px;
+                    color: var(--muted);
+                    font-size: 12px;
+                    font-weight: 800;
+                    text-align: center;
+                    text-decoration: none;
+                  }
+
+                  .mobile-bottom-nav a[aria-current="page"] {
+                    background: #eef6fb;
+                    color: var(--accent-strong);
                   }
 
                   .page-title {
@@ -2798,7 +2834,7 @@ final class AssetWebApp
 
                 @media print {
                   body { background: #ffffff; }
-                  .skip-link, .sidebar, button, .button-link { display: none; }
+                  .skip-link, .sidebar, button, .button-link, .mobile-bottom-nav { display: none; }
                   .global-search { display: none; }
                   .app-layout { display: block; }
                   .panel { border-color: #000000; }
@@ -2841,6 +2877,7 @@ final class AssetWebApp
                   {$content}
                 </main>
               </div>
+              {$mobileBottomNavigation}
             </body>
             </html>
             HTML, $status);
@@ -4603,6 +4640,46 @@ final class AssetWebApp
         }
 
         return sprintf('<ul class="nav-section-list">%s</ul>', $sectionItems);
+    }
+
+    private function renderMobileBottomNavigation(string $currentPath): string
+    {
+        $items = [
+            '/' => 'Dashboard',
+            '/assets' => 'Assets',
+            '/search' => 'Search',
+            '/custody' => 'Transfers',
+            '/admin' => 'More',
+        ];
+        $links = '';
+
+        foreach ($items as $path => $label) {
+            $current = $this->isMobileNavigationCurrent($currentPath, $path) ? ' aria-current="page"' : '';
+            $links .= sprintf(
+                '<a href="%s"%s>%s</a>',
+                $this->escape($path),
+                $current,
+                $this->escape($label),
+            );
+        }
+
+        return sprintf('<nav class="mobile-bottom-nav" aria-label="Mobile primary navigation">%s</nav>', $links);
+    }
+
+    private function isMobileNavigationCurrent(string $currentPath, string $navigationPath): bool
+    {
+        if ($navigationPath === '/') {
+            return $currentPath === '/';
+        }
+
+        if ($navigationPath === '/admin') {
+            return !str_starts_with($currentPath, '/assets')
+                && !str_starts_with($currentPath, '/search')
+                && !str_starts_with($currentPath, '/custody')
+                && $currentPath !== '/';
+        }
+
+        return $currentPath === $navigationPath || str_starts_with($currentPath, $navigationPath . '/');
     }
 
     private function normalizePath(string $path): string
