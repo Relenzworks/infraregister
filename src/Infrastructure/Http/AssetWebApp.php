@@ -2269,6 +2269,48 @@ final class AssetWebApp
                   padding: 0 12px;
                 }
 
+                .header-utilities {
+                  display: flex;
+                  align-items: center;
+                  gap: 8px;
+                  margin: 0;
+                  padding: 0;
+                  list-style: none;
+                }
+
+                .utility-link {
+                  display: inline-flex;
+                  align-items: center;
+                  justify-content: center;
+                  min-height: 36px;
+                  padding: 0 10px;
+                  border: 1px solid var(--line);
+                  border-radius: 6px;
+                  background: #ffffff;
+                  color: var(--text);
+                  font-size: 14px;
+                  font-weight: 750;
+                  text-decoration: none;
+                  white-space: nowrap;
+                }
+
+                .utility-link:hover {
+                  border-color: var(--accent-strong);
+                  color: var(--accent-strong);
+                }
+
+                .utility-count {
+                  min-width: 20px;
+                  margin-left: 6px;
+                  padding: 1px 6px;
+                  border-radius: 999px;
+                  background: var(--warning-bg);
+                  color: var(--warning-text);
+                  font-size: 12px;
+                  line-height: 1.5;
+                  text-align: center;
+                }
+
                 .app-layout {
                   display: grid;
                   grid-template-columns: 232px minmax(0, 1fr);
@@ -2687,6 +2729,13 @@ final class AssetWebApp
                     margin-left: 0;
                   }
 
+                  .header-utilities {
+                    width: 100%;
+                    overflow-x: auto;
+                    order: 4;
+                    padding-bottom: 8px;
+                  }
+
                   .app-layout {
                     grid-template-columns: 1fr;
                   }
@@ -2769,6 +2818,12 @@ final class AssetWebApp
                     <button type="submit">Search</button>
                   </form>
                   <a class="button-link" href="/assets/register">Register Asset</a>
+                  <ul class="header-utilities" aria-label="Header utilities">
+                    <li><a class="utility-link" href="/imports">Import</a></li>
+                    <li><a class="utility-link" href="/monitoring/exceptions">Alerts<span class="utility-count" aria-label="37 open monitoring exceptions">37</span></a></li>
+                    <li><a class="utility-link" href="/reports">Help</a></li>
+                    <li><a class="utility-link" href="/admin/roles">Admin</a></li>
+                  </ul>
                 </div>
               </header>
               <div class="app-layout">
