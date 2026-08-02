@@ -32,6 +32,11 @@ final class AssetWebAppTest extends TestCase
         self::assertStringContainsString('<a class="button-link" href="/assets/register">Register Asset</a>', (string) $response->getContent());
         self::assertStringContainsString('<form class="global-search" role="search" method="get" action="/search">', (string) $response->getContent());
         self::assertStringContainsString('<input type="search" name="q" value="" aria-label="Global search" placeholder="Search assets, hosts, IPs">', (string) $response->getContent());
+        self::assertStringContainsString('<ul class="header-utilities" aria-label="Header utilities">', (string) $response->getContent());
+        self::assertStringContainsString('<a class="utility-link" href="/imports">Import</a>', (string) $response->getContent());
+        self::assertStringContainsString('<a class="utility-link" href="/monitoring/exceptions">Alerts<span class="utility-count" aria-label="37 open monitoring exceptions">37</span></a>', (string) $response->getContent());
+        self::assertStringContainsString('<a class="utility-link" href="/reports">Help</a>', (string) $response->getContent());
+        self::assertStringContainsString('<a class="utility-link" href="/admin/roles">Admin</a>', (string) $response->getContent());
         self::assertStringContainsString('<form method="post" action="/assets/register" novalidate>', (string) $response->getContent());
         self::assertStringContainsString('aria-describedby="asset-name-requirements"', (string) $response->getContent());
         self::assertStringContainsString('Register Asset', (string) $response->getContent());
