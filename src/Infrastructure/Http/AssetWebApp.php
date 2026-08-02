@@ -2697,6 +2697,39 @@ final class AssetWebApp
                   font-weight: 750;
                 }
 
+                .filter-bar {
+                  display: grid;
+                  grid-template-columns: repeat(3, minmax(0, 1fr));
+                  gap: 10px;
+                  padding: 14px;
+                  border-bottom: 1px solid var(--line);
+                  background: #ffffff;
+                }
+
+                .filter-chip {
+                  display: grid;
+                  gap: 3px;
+                  min-height: 58px;
+                  padding: 9px 11px;
+                  border: 1px solid var(--line);
+                  border-radius: 7px;
+                  background: #fbfcfd;
+                  text-decoration: none;
+                }
+
+                .filter-label {
+                  color: var(--muted);
+                  font-size: 12px;
+                  font-weight: 800;
+                  text-transform: uppercase;
+                }
+
+                .filter-value {
+                  color: var(--text);
+                  font-size: 14px;
+                  font-weight: 750;
+                }
+
                 form {
                   display: grid;
                   gap: 14px;
@@ -2926,6 +2959,10 @@ final class AssetWebApp
                     position: sticky;
                     top: 0;
                     z-index: 1;
+                  }
+
+                  .filter-bar {
+                    grid-template-columns: 1fr;
                   }
                 }
 
@@ -3855,6 +3892,7 @@ final class AssetWebApp
         $metrics = $this->renderMetrics($workspace['metrics']);
         $states = $this->renderScreenStates($path);
         $actions = $this->renderActions($workspace['actions'], $path);
+        $filters = $this->renderFacetedFilters($path);
         $bulkActions = $this->renderBulkActions($path);
         $table = $this->renderTable($workspace['columns'], $workspace['rows']);
         $sideItems = $this->renderSideItems($workspace['sideItems']);
@@ -3873,6 +3911,7 @@ final class AssetWebApp
                       {$actions}
                     </div>
                   </div>
+                  {$filters}
                   {$bulkActions}
                   {$table}
                 </section>
@@ -3891,6 +3930,36 @@ final class AssetWebApp
               </aside>
             </div>
             HTML;
+    }
+
+    private function renderFacetedFilters(string $path): string
+    {
+        if ($path !== '/assets') {
+            return '';
+        }
+
+        $filters = [
+            'Status' => 'All lifecycle states',
+            'Type' => 'Routers, switches, optics, CPE',
+            'Site' => 'All sites and warehouses',
+            'Ownership' => 'Owner and department',
+            'Custodian' => 'People, teams, vehicles',
+            'Vendor / Model' => 'Canonical catalog values',
+            'Warranty' => 'Active, expiring, uncovered',
+            'Monitoring' => 'Linked, missing, mismatched',
+            'Audit Age' => 'Fresh, stale, overdue',
+        ];
+        $chips = '';
+
+        foreach ($filters as $label => $value) {
+            $chips .= sprintf(
+                '<a class="filter-chip" href="/assets"><span class="filter-label">%s</span><span class="filter-value">%s</span></a>',
+                $this->escape($label),
+                $this->escape($value),
+            );
+        }
+
+        return sprintf('<div class="filter-bar" aria-label="Asset faceted filters">%s</div>', $chips);
     }
 
     private function renderBulkActions(string $path): string
