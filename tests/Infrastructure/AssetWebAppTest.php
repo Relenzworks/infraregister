@@ -239,6 +239,30 @@ final class AssetWebAppTest extends TestCase
         self::assertStringNotContainsString('Asset bulk selection actions', (string) $response->getContent());
     }
 
+    public function testItRendersAssetFacetedFilters(): void
+    {
+        $response = $this->app('asset-filters')->handle(Request::create('/assets'));
+        $content = (string) $response->getContent();
+
+        self::assertSame(200, $response->getStatusCode());
+        self::assertStringContainsString('<div class="filter-bar" aria-label="Asset faceted filters">', $content);
+        self::assertStringContainsString('<span class="filter-label">Status</span><span class="filter-value">All lifecycle states</span>', $content);
+        self::assertStringContainsString('<span class="filter-label">Type</span><span class="filter-value">Routers, switches, optics, CPE</span>', $content);
+        self::assertStringContainsString('<span class="filter-label">Site</span><span class="filter-value">All sites and warehouses</span>', $content);
+        self::assertStringContainsString('<span class="filter-label">Ownership</span><span class="filter-value">Owner and department</span>', $content);
+        self::assertStringContainsString('<span class="filter-label">Custodian</span><span class="filter-value">People, teams, vehicles</span>', $content);
+        self::assertStringContainsString('<span class="filter-label">Warranty</span><span class="filter-value">Active, expiring, uncovered</span>', $content);
+        self::assertStringContainsString('<span class="filter-label">Monitoring</span><span class="filter-value">Linked, missing, mismatched</span>', $content);
+    }
+
+    public function testItLimitsAssetFacetedFiltersToTheAssetIndex(): void
+    {
+        $response = $this->app('no-network-filters')->handle(Request::create('/network'));
+
+        self::assertSame(200, $response->getStatusCode());
+        self::assertStringNotContainsString('Asset faceted filters', (string) $response->getContent());
+    }
+
     public function testItNormalizesTrailingSlashesForScreens(): void
     {
         $response = $this->app('trailing-slash')->handle(Request::create('/assets/'));
