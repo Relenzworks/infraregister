@@ -2822,7 +2822,7 @@ final class AssetWebApp
             ['label' => 'Workflow', 'value' => 'Next step and close criteria'],
             ['label' => 'History', 'value' => 'Attention queue changes'],
         ]);
-        $actions = $this->renderActions(['Assign Owner', 'Open Related Record', 'Attach Evidence', 'Resolve Item']);
+        $actions = $this->renderActions(['Assign Owner', 'Open Related Record', 'Attach Evidence', 'Resolve Item'], '/');
 
         return <<<HTML
             {$metrics}
@@ -2890,7 +2890,7 @@ final class AssetWebApp
             ['label' => 'Monitoring', 'value' => 'Cacti host and graph links'],
             ['label' => 'Audit', 'value' => 'Topology evidence history'],
         ]);
-        $actions = $this->renderActions(['Reconcile Peers', 'Link Asset', 'Reserve Prefix', 'Attach Graph']);
+        $actions = $this->renderActions(['Reconcile Peers', 'Link Asset', 'Reserve Prefix', 'Attach Graph'], '/network');
 
         return <<<HTML
             {$metrics}
@@ -2957,7 +2957,7 @@ final class AssetWebApp
             ['label' => 'Evidence', 'value' => 'Validation and audit records'],
             ['label' => 'History', 'value' => 'Configuration change timeline'],
         ]);
-        $actions = $this->renderActions(['Review Setting', 'Validate Policy', 'Attach Evidence', 'Open Change']);
+        $actions = $this->renderActions(['Review Setting', 'Validate Policy', 'Attach Evidence', 'Open Change'], '/admin');
 
         return <<<HTML
             {$metrics}
@@ -3025,7 +3025,7 @@ final class AssetWebApp
             ['label' => 'Evidence', 'value' => 'Photos, approvals, and vendor records'],
             ['label' => 'Audit', 'value' => 'Lifecycle event history'],
         ]);
-        $actions = $this->renderActions(['Schedule Window', 'Reserve Spare', 'Update RMA', 'Close Work']);
+        $actions = $this->renderActions(['Schedule Window', 'Reserve Spare', 'Update RMA', 'Close Work'], '/maintenance');
 
         return <<<HTML
             {$metrics}
@@ -3093,7 +3093,7 @@ final class AssetWebApp
             ['label' => 'Exports', 'value' => 'CSV, PDF, and retention'],
             ['label' => 'Audit', 'value' => 'Run and download history'],
         ]);
-        $actions = $this->renderActions(['Run Report', 'Export CSV', 'Schedule Report', 'Edit Filter']);
+        $actions = $this->renderActions(['Run Report', 'Export CSV', 'Schedule Report', 'Edit Filter'], '/reports');
 
         return <<<HTML
             {$metrics}
@@ -3162,7 +3162,7 @@ final class AssetWebApp
             ['label' => 'Approvals', 'value' => 'Budget and renewal decisions'],
             ['label' => 'Audit', 'value' => 'Renewal evidence history'],
         ]);
-        $actions = $this->renderActions(['Review Renewal', 'Attach Document', 'Map Coverage', 'Request Approval']);
+        $actions = $this->renderActions(['Review Renewal', 'Attach Document', 'Map Coverage', 'Request Approval'], '/contracts');
 
         return <<<HTML
             {$metrics}
@@ -3229,7 +3229,7 @@ final class AssetWebApp
             ['label' => 'Labels', 'value' => 'Print queue'],
             ['label' => 'Audit', 'value' => 'Receiving evidence'],
         ]);
-        $actions = $this->renderActions(['Receive Items', 'Resolve Hold', 'Print Labels', 'Create Assets']);
+        $actions = $this->renderActions(['Receive Items', 'Resolve Hold', 'Print Labels', 'Create Assets'], '/procurement');
 
         return <<<HTML
             {$metrics}
@@ -3296,7 +3296,7 @@ final class AssetWebApp
             ['label' => 'Preview', 'value' => 'Create and update plan'],
             ['label' => 'Audit', 'value' => 'Import evidence'],
         ]);
-        $actions = $this->renderActions(['Map Fields', 'Validate Batch', 'Commit Import', 'Export Errors']);
+        $actions = $this->renderActions(['Map Fields', 'Validate Batch', 'Commit Import', 'Export Errors'], '/imports');
 
         return <<<HTML
             {$metrics}
@@ -3363,7 +3363,7 @@ final class AssetWebApp
             ['label' => 'History', 'value' => 'Prior reconcile runs'],
             ['label' => 'Audit', 'value' => 'Resolution evidence'],
         ]);
-        $actions = $this->renderActions(['Link Host', 'Suppress Exception', 'Create Asset', 'Resolve Signal']);
+        $actions = $this->renderActions(['Link Host', 'Suppress Exception', 'Create Asset', 'Resolve Signal'], '/monitoring');
 
         return <<<HTML
             {$metrics}
@@ -3430,7 +3430,7 @@ final class AssetWebApp
             ['label' => 'Comments', 'value' => 'Operational notes'],
             ['label' => 'Audit', 'value' => 'Transfer events'],
         ]);
-        $actions = $this->renderActions(['Accept Transfer', 'Reject Transfer', 'Request Return', 'Add Evidence']);
+        $actions = $this->renderActions(['Accept Transfer', 'Reject Transfer', 'Request Return', 'Add Evidence'], '/custody');
 
         return <<<HTML
             {$metrics}
@@ -3496,7 +3496,7 @@ final class AssetWebApp
             ['label' => 'Power', 'value' => 'Feed and circuit map'],
             ['label' => 'Audit', 'value' => 'Counts and exceptions'],
         ]);
-        $actions = $this->renderActions(['Edit Location', 'Plan Move', 'Start Audit', 'Print Labels']);
+        $actions = $this->renderActions(['Edit Location', 'Plan Move', 'Start Audit', 'Print Labels'], '/locations');
 
         return <<<HTML
             {$metrics}
@@ -3560,7 +3560,7 @@ final class AssetWebApp
             ['label' => 'Custody', 'value' => 'Assignments and transfers'],
             ['label' => 'Audit', 'value' => 'Event history'],
         ]);
-        $actions = $this->renderActions(['Edit Asset', 'Change Status', 'Transfer Custody', 'Link Monitoring']);
+        $actions = $this->renderActions(['Edit Asset', 'Change Status', 'Transfer Custody', 'Link Monitoring'], '/assets');
 
         return <<<HTML
             {$metrics}
@@ -3653,7 +3653,7 @@ final class AssetWebApp
         $cards = $this->renderCards($screen['items']);
         $workspace = $this->workspaceFor($path);
         $metrics = $this->renderMetrics($workspace['metrics']);
-        $actions = $this->renderActions($workspace['actions']);
+        $actions = $this->renderActions($workspace['actions'], $path);
         $table = $this->renderTable($workspace['columns'], $workspace['rows']);
         $sideItems = $this->renderSideItems($workspace['sideItems']);
         $tableTitle = $this->escape($workspace['tableTitle']);
@@ -4275,15 +4275,99 @@ final class AssetWebApp
     /**
      * @param list<string> $actions
      */
-    private function renderActions(array $actions): string
+    private function renderActions(array $actions, string $contextPath): string
     {
         $items = '';
 
         foreach ($actions as $action) {
-            $items .= sprintf('<span class="secondary-action" aria-disabled="true">%s</span>', $this->escape($action));
+            $href = $this->actionHref($action, $contextPath);
+
+            if ($href === null) {
+                $items .= sprintf('<span class="secondary-action" aria-disabled="true">%s</span>', $this->escape($action));
+
+                continue;
+            }
+
+            $items .= sprintf(
+                '<a class="secondary-action" href="%s">%s</a>',
+                $this->escape($href),
+                $this->escape($action),
+            );
         }
 
         return $items;
+    }
+
+    private function actionHref(string $action, string $contextPath): ?string
+    {
+        $targets = [
+            'Accept Batch' => '/custody',
+            'Accept Transfer' => '/custody',
+            'Add Contact' => '/people',
+            'Add Contract' => '/contracts',
+            'Add Field' => '/reports/builder',
+            'Add Site' => '/locations',
+            'Add Vendor' => '/procurement/vendors',
+            'Assign Address' => '/network/ipam',
+            'Attach Document' => '/contracts',
+            'Build Filter' => '/reports/builder',
+            'Create Asset' => '/assets/register',
+            'Create Assets' => '/assets/register',
+            'Create Transfer' => '/custody',
+            'Create View' => '/assets/views',
+            'Edit Filter' => '/reports/builder',
+            'Export CSV' => $contextPath,
+            'Export Custody' => '/custody',
+            'Export Errors' => '/imports',
+            'Export Evidence' => '/admin/audit-log',
+            'Export Queue' => '/',
+            'Export Results' => '/search',
+            'Filter Events' => '/admin/audit-log',
+            'Import Interfaces' => '/network/interfaces',
+            'Import LLDP' => '/network/interfaces',
+            'Link Graphs' => '/monitoring/cacti',
+            'Link Host' => '/monitoring/cacti',
+            'Link Monitoring' => '/monitoring/cacti',
+            'Map Fields' => '/imports',
+            'Normalize Model' => '/procurement/vendors',
+            'Open Advanced Filters' => '/search',
+            'Open RMA' => '/maintenance/rma',
+            'Plan Rack Move' => '/locations/racks',
+            'Print Elevation' => '/locations/racks',
+            'Print Labels' => $contextPath === '/locations' ? '/locations/racks' : '/procurement/receiving',
+            'Receive Items' => '/procurement/receiving',
+            'Receive PO' => '/procurement/receiving',
+            'Reconcile Optics' => '/network/interfaces',
+            'Reconcile Peers' => '/network/interfaces',
+            'Reject Transfer' => '/custody',
+            'Request Return' => '/custody',
+            'Reserve Prefix' => '/network/ipam',
+            'Reserve RU' => '/locations/racks',
+            'Reserve Spare' => '/maintenance/spares',
+            'Review Renewal' => '/contracts',
+            'Review Source' => '/admin/audit-log',
+            'Review Support' => '/procurement/vendors',
+            'Run Drift Check' => '/network/ipam',
+            'Run Reconcile' => '/monitoring/exceptions',
+            'Run Report' => '/reports',
+            'Save Report' => '/reports/builder',
+            'Save Search' => '/search',
+            'Save View' => '/assets/views',
+            'Scan Serials' => '/procurement/receiving',
+            'Schedule Export' => '/reports/builder',
+            'Schedule Report' => '/reports/builder',
+            'Schedule Review' => '/assets/views',
+            'Schedule Window' => '/maintenance/calendar',
+            'Share View' => '/assets/views',
+            'Start Audit' => '/',
+            'Start Import' => '/imports',
+            'Transfer Custody' => '/custody',
+            'Update RMA' => '/maintenance/rma',
+            'Upload CSV' => '/imports',
+            'Validate Batch' => '/imports',
+        ];
+
+        return $targets[$action] ?? null;
     }
 
     /**

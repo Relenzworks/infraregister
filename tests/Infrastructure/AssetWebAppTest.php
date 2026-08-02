@@ -128,6 +128,27 @@ final class AssetWebAppTest extends TestCase
         self::assertStringNotContainsString('Screen Plan', $content);
     }
 
+    public function testItRendersRouteAwareScreenActions(): void
+    {
+        $response = $this->app('screen-actions')->handle(Request::create('/network'));
+        $content = (string) $response->getContent();
+
+        self::assertSame(200, $response->getStatusCode());
+        self::assertStringContainsString('<a class="secondary-action" href="/network/interfaces">Import LLDP</a>', $content);
+        self::assertStringContainsString('<a class="secondary-action" href="/network/interfaces">Reconcile Peers</a>', $content);
+        self::assertStringContainsString('<a class="secondary-action" href="/network/ipam">Reserve Prefix</a>', $content);
+    }
+
+    public function testItLeavesUnavailableScreenActionsDisabled(): void
+    {
+        $response = $this->app('disabled-actions')->handle(Request::create('/assets'));
+        $content = (string) $response->getContent();
+
+        self::assertSame(200, $response->getStatusCode());
+        self::assertStringContainsString('<a class="secondary-action" href="/assets/views">Save View</a>', $content);
+        self::assertStringContainsString('<span class="secondary-action" aria-disabled="true">Bulk Edit</span>', $content);
+    }
+
     public function testItNormalizesTrailingSlashesForScreens(): void
     {
         $response = $this->app('trailing-slash')->handle(Request::create('/assets/'));
@@ -239,7 +260,15 @@ final class AssetWebAppTest extends TestCase
             $content,
         );
         self::assertStringContainsString(
-            '<span class="secondary-action" aria-disabled="true">Link Monitoring</span>',
+            '<a class="secondary-action" href="/monitoring/cacti">Link Monitoring</a>',
+            $content,
+        );
+        self::assertStringContainsString(
+            '<a class="secondary-action" href="/custody">Transfer Custody</a>',
+            $content,
+        );
+        self::assertStringContainsString(
+            '<span class="secondary-action" aria-disabled="true">Edit Asset</span>',
             $content,
         );
         self::assertStringContainsString(sprintf('Record identifier: %s', $id->value), $content);
